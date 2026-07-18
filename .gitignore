@@ -1,0 +1,5 @@
+/target
+
+# Model blobs are large (85 MB CREPE) — fetched/copied locally, never committed.
+/models
+/models/*.onnx
