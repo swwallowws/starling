@@ -78,7 +78,15 @@ pub fn analyze(
             // THE SEAM: keep the fractional center, derive the 12-TET note from it.
             let center = segment::span_pitch(&frames, span, sc);
             let pitch = segment::round_to_12tet(center);
-            expression::encode_note(&frames, span, pitch, center, max_rms, hop_s, &cfg.expression)
+            expression::encode_note(
+                &frames,
+                span,
+                pitch,
+                center,
+                max_rms,
+                hop_s,
+                &cfg.expression,
+            )
         })
         .collect();
 

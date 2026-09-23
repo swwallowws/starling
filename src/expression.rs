@@ -53,8 +53,9 @@ pub fn encode_note(
         .iter()
         .map(|p| p.value)
         .fold(0.0f32, f32::max);
-    let velocity =
-        (attack_peak.powf(cfg.velocity_gamma)).clamp(0.0, 1.0).max(cfg.velocity_floor);
+    let velocity = (attack_peak.powf(cfg.velocity_gamma))
+        .clamp(0.0, 1.0)
+        .max(cfg.velocity_floor);
 
     Note {
         pitch,

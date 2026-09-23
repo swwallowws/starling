@@ -59,7 +59,11 @@ pub fn extract(audio: &[f32], sample_rate: u32, n_frames: usize) -> Vec<FrameFea
             mag_sum += mag;
             weighted += mag * (k as f32 * bin_hz);
         }
-        let centroid_hz = if mag_sum > 1e-9 { weighted / mag_sum } else { 0.0 };
+        let centroid_hz = if mag_sum > 1e-9 {
+            weighted / mag_sum
+        } else {
+            0.0
+        };
 
         out.push(FrameFeature { rms, centroid_hz });
     }

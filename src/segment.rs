@@ -47,7 +47,11 @@ fn robust_center(vals: &[f32], tol: f32) -> f32 {
         return 0.0;
     }
     let m = median(vals);
-    let cluster: Vec<f32> = vals.iter().copied().filter(|v| (v - m).abs() <= tol).collect();
+    let cluster: Vec<f32> = vals
+        .iter()
+        .copied()
+        .filter(|v| (v - m).abs() <= tol)
+        .collect();
     if cluster.is_empty() {
         m
     } else {

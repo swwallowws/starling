@@ -138,7 +138,10 @@ fn fractional_pitch_center_is_preserved() {
     let note = &r.notes[0];
     assert_eq!(note.pitch, 69, "rounds to A4 in 12-TET");
     let cents_off = (note.pitch_center - 69.0) * 100.0;
-    println!("pitch_center = {:.4} ({:+.1} cents)", note.pitch_center, cents_off);
+    println!(
+        "pitch_center = {:.4} ({:+.1} cents)",
+        note.pitch_center, cents_off
+    );
     assert!(
         (cents_off - 30.0).abs() < 15.0,
         "fractional center should be ~+30c off A4, got {cents_off:+.1}c"

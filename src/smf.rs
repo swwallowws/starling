@@ -47,13 +47,25 @@ struct Ev {
 }
 
 enum EvKind {
-    NoteOn { key: u8, vel: u8 },
-    NoteOff { key: u8 },
+    NoteOn {
+        key: u8,
+        vel: u8,
+    },
+    NoteOff {
+        key: u8,
+    },
     /// 14-bit pitch-bend value (0..16383, 8192 = center), as produced by
     /// [`crate::mpe::bend_from_offset`].
-    Bend { value: u16 },
-    Cc { ctrl: u8, value: u8 },
-    Pressure { value: u8 },
+    Bend {
+        value: u16,
+    },
+    Cc {
+        ctrl: u8,
+        value: u8,
+    },
+    Pressure {
+        value: u8,
+    },
 }
 
 fn seconds_to_ticks(s: f32) -> u32 {
@@ -197,7 +209,10 @@ pub fn write_smf(analysis: &Analysis, mode: OutputMode, path: &str) -> Result<()
         };
         track.push(TrackEvent {
             delta: u28::new(delta),
-            kind: TrackEventKind::Midi { channel: ch, message },
+            kind: TrackEventKind::Midi {
+                channel: ch,
+                message,
+            },
         });
     }
     track.push(TrackEvent {
@@ -206,7 +221,10 @@ pub fn write_smf(analysis: &Analysis, mode: OutputMode, path: &str) -> Result<()
     });
 
     let smf = Smf {
-        header: Header::new(Format::SingleTrack, Timing::Metrical(u15::new(TICKS_PER_BEAT))),
+        header: Header::new(
+            Format::SingleTrack,
+            Timing::Metrical(u15::new(TICKS_PER_BEAT)),
+        ),
         tracks: vec![track],
     };
     smf.save(path)?;
