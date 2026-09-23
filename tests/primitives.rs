@@ -77,7 +77,12 @@ fn wrong_bend_range_produces_wrong_bend() {
 
 #[test]
 fn resolution_is_subcent_at_mpe_range() {
-    assert!(9600.0 / 16384.0 < 1.0);
+    // One 14-bit step at ±48 st is 4800/8192 ≈ 0.59 cents, and a 1-cent offset
+    // must survive the encode/decode round trip to within one step.
+    let step = bend_to_cents(8193, MPE_RANGE) - bend_to_cents(8192, MPE_RANGE);
+    assert!(step < 1.0, "step {step} cents");
+    let one_cent = bend_from_offset(0.01, MPE_RANGE);
+    assert!((bend_to_cents(one_cent, MPE_RANGE) - 1.0).abs() <= step);
 }
 
 #[test]

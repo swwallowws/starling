@@ -7,6 +7,15 @@ use voxmidi_core::{analyze, AnalysisConfig, CrepeModel};
 const MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/models/crepe-full.onnx");
 const SR: u32 = 44_100;
 
+/// Load the model, or `None` (test skips) when it hasn't been downloaded.
+fn load_model() -> Option<CrepeModel> {
+    if !std::path::Path::new(MODEL).exists() {
+        eprintln!("skipping: {MODEL} not found (see README for how to get the model)");
+        return None;
+    }
+    Some(CrepeModel::from_path(MODEL).expect("model"))
+}
+
 /// Additive-harmonic tone with time-varying frequency `f(t)` and envelope `env(t)`.
 fn synth<F, E>(secs: f32, f: F, env: E) -> Vec<f32>
 where
@@ -52,7 +61,7 @@ fn note_pitches(audio: &[f32], model: &CrepeModel) -> Vec<u8> {
 
 #[test]
 fn segmentation_cases() {
-    let model = CrepeModel::from_path(MODEL).expect("model");
+    let Some(model) = load_model() else { return };
 
     // 1. Sustained note -> exactly one note at A4 (69).
     let sustained = synth(0.8, |_| 440.0, |t| ar(t, 0.8));
@@ -130,7 +139,7 @@ fn segmentation_cases() {
 /// not discarded, so a microtonal consumer could requantize it.
 #[test]
 fn fractional_pitch_center_is_preserved() {
-    let model = CrepeModel::from_path(MODEL).expect("model");
+    let Some(model) = load_model() else { return };
     let sharp = 440.0 * 2.0f32.powf(30.0 / 1200.0); // A4 + 30 cents
     let audio = synth(0.8, |_| sharp, |t| ar(t, 0.8));
     let r = analyze(&audio, SR, &model, &AnalysisConfig::default()).unwrap();

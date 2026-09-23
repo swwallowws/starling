@@ -231,30 +231,51 @@ pub fn write_smf(analysis: &Analysis, mode: OutputMode, path: &str) -> Result<()
     Ok(())
 }
 
-/// Emit RPN 0 (pitchbend range) on the relevant channels at tick 0.
+/// RPN 6: MPE Configuration Message. Sent on the master channel, data = number
+/// of member channels. Lets MPE synths switch into MPE mode from the file alone.
+const RPN_MPE_CONFIG: u8 = 6;
+/// RPN 0: pitchbend sensitivity.
+const RPN_BEND_RANGE: u8 = 0;
+/// MPE lower zone: master channel 1 + member channels 2..=16.
+const MPE_MEMBER_CHANNELS: u8 = 15;
+
+/// Tick-0 setup: in MPE mode, the MPE Configuration Message on the master
+/// channel first (it resets member bend ranges), then RPN 0 (pitchbend range)
+/// on every channel in use.
 fn push_bend_range_rpn(track: &mut Track, mode: OutputMode) {
     let semis = mode.bend_range() as u8;
     let channels: Vec<u8> = match mode {
         OutputMode::SingleChannel { .. } => vec![0],
-        OutputMode::Mpe => (0..=15).collect(), // master + all members
+        OutputMode::Mpe => {
+            push_rpn(track, 0, RPN_MPE_CONFIG, MPE_MEMBER_CHANNELS);
+            (0..=15).collect() // master + all members
+        }
     };
     for ch in channels {
-        for (ctrl, val) in [
-            (101u8, 0u8), // RPN MSB = 0
-            (100, 0),     // RPN LSB = 0  -> pitchbend range
-            (6, semis),   // data entry MSB = range in semitones
-            (38, 0),      // data entry LSB = 0 cents
-        ] {
-            track.push(TrackEvent {
-                delta: 0.into(),
-                kind: TrackEventKind::Midi {
-                    channel: u4::new(ch),
-                    message: MidiMessage::Controller {
-                        controller: u7::new(ctrl),
-                        value: u7::new(val),
-                    },
+        push_rpn(track, ch, RPN_BEND_RANGE, semis);
+    }
+}
+
+/// Write one RPN (MSB 0, LSB `rpn`) with data-entry MSB `value`, then the RPN
+/// null so later stray data-entry CCs can't change it.
+fn push_rpn(track: &mut Track, channel: u8, rpn: u8, value: u8) {
+    for (ctrl, val) in [
+        (101u8, 0u8), // RPN MSB
+        (100, rpn),   // RPN LSB
+        (6, value),   // data entry MSB
+        (38, 0),      // data entry LSB
+        (101, 127),   // RPN null
+        (100, 127),
+    ] {
+        track.push(TrackEvent {
+            delta: 0.into(),
+            kind: TrackEventKind::Midi {
+                channel: u4::new(channel),
+                message: MidiMessage::Controller {
+                    controller: u7::new(ctrl),
+                    value: u7::new(val),
                 },
-            });
-        }
+            },
+        });
     }
 }

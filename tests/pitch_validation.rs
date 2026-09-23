@@ -19,6 +19,10 @@ fn median(mut v: Vec<f32>) -> f32 {
 
 #[test]
 fn tract_reproduces_f0() {
+    if !std::path::Path::new(MODEL).exists() {
+        eprintln!("skipping: {MODEL} not found (see README for how to get the model)");
+        return;
+    }
     let model = CrepeModel::from_path(MODEL).expect("load model");
     for &target in &[110.0f32, 220.0, 440.0, 880.0] {
         let sr = 44_100;
