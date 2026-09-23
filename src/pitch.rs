@@ -57,40 +57,77 @@ impl CrepeModel {
     /// Track pitch over mono `audio` at `sample_rate`. Returns one [`RawPitch`]
     /// per 10 ms hop (at the original-audio time base).
     pub fn track(&self, audio: &[f32], sample_rate: u32) -> Result<Vec<RawPitch>> {
+        self.track_gated(audio, sample_rate, 0.0)
+    }
+
+    /// Like [`track`](Self::track), but skips inference on frames whose RMS is
+    /// below `rms_floor` (they come back as f0 0, confidence 0). The RMS is the
+    /// same per-frame value [`crate::features::extract`] computes, so with the
+    /// voicing gate's floor this only skips frames that would be unvoiced anyway.
+    pub fn track_gated(
+        &self,
+        audio: &[f32],
+        sample_rate: u32,
+        rms_floor: f32,
+    ) -> Result<Vec<RawPitch>> {
         let audio16 = resample(audio, sample_rate, CREPE_SR);
-        let frames = frame_and_normalize(&audio16);
+        let (frames, rms) = frame_and_normalize(&audio16);
         let n = frames.len();
         if n == 0 {
             return Ok(vec![]);
         }
+        let active: Vec<usize> = (0..n).filter(|&i| rms[i] >= rms_floor).collect();
+        let frames: Vec<[f32; WINDOW]> = active.iter().map(|&i| frames[i]).collect();
 
-        let mut out = Vec::with_capacity(n);
+        // Frames are independent, so batches run in parallel: split the batch
+        // list into one contiguous chunk per core and decode in place.
+        let mut decoded = vec![(0.0f32, 0.0f32); frames.len()];
+        let threads = std::thread::available_parallelism().map_or(1, |p| p.get());
+        let per_thread = n.div_ceil(BATCH).div_ceil(threads) * BATCH;
+        std::thread::scope(|s| {
+            let jobs: Vec<_> = frames
+                .chunks(per_thread)
+                .zip(decoded.chunks_mut(per_thread))
+                .map(|(fr, out)| s.spawn(move || self.run_batches(fr, out)))
+                .collect();
+            jobs.into_iter()
+                .try_for_each(|j| j.join().expect("pitch worker panicked"))
+        })?;
+
+        let mut all = vec![(0.0f32, 0.0f32); n];
+        for (&i, d) in active.iter().zip(decoded) {
+            all[i] = d;
+        }
         let hop_s = HOP as f32 / CREPE_SR as f32;
-        let mut idx = 0usize;
-        while idx < n {
-            let count = (n - idx).min(BATCH);
+        Ok(all
+            .into_iter()
+            .enumerate()
+            .map(|(i, (f0_hz, confidence))| RawPitch {
+                time: i as f32 * hop_s,
+                f0_hz,
+                confidence,
+            })
+            .collect())
+    }
+
+    /// Run `frames` through the model in fixed-size batches, writing
+    /// `(f0_hz, confidence)` per frame into `out` (same length as `frames`).
+    fn run_batches(&self, frames: &[[f32; WINDOW]], out: &mut [(f32, f32)]) -> Result<()> {
+        for (chunk, out) in frames.chunks(BATCH).zip(out.chunks_mut(BATCH)) {
             // Build a [BATCH, WINDOW] buffer, zero-padding the tail of the last chunk.
             let mut buf = vec![0.0f32; BATCH * WINDOW];
-            for r in 0..count {
-                buf[r * WINDOW..(r + 1) * WINDOW].copy_from_slice(&frames[idx + r]);
+            for (r, frame) in chunk.iter().enumerate() {
+                buf[r * WINDOW..(r + 1) * WINDOW].copy_from_slice(frame);
             }
             let input = Tensor::from_shape(&[BATCH, WINDOW], &buf)?;
             let result = self.plan.run(tvec!(input.into()))?;
             let act = result[0].to_array_view::<f32>()?;
             let act = act.as_slice().context("activation not contiguous")?;
-            for r in 0..count {
-                let row = &act[r * BINS..(r + 1) * BINS];
-                let (f0, conf) = decode_row(row);
-                let frame_idx = idx + r;
-                out.push(RawPitch {
-                    time: frame_idx as f32 * hop_s,
-                    f0_hz: f0,
-                    confidence: conf,
-                });
+            for (r, slot) in out.iter_mut().enumerate() {
+                *slot = decode_row(&act[r * BINS..(r + 1) * BINS]);
             }
-            idx += count;
         }
-        Ok(out)
+        Ok(())
     }
 }
 
@@ -118,22 +155,25 @@ fn decode_row(row: &[f32]) -> (f32, f32) {
     (cents_to_hz(cents), peak)
 }
 
-/// Frame 16 kHz mono audio into normalized 1024-sample frames (centered, 10 ms hop).
-fn frame_and_normalize(audio16: &[f32]) -> Vec<[f32; WINDOW]> {
+/// Frame 16 kHz mono audio into normalized 1024-sample frames (centered, 10 ms
+/// hop), plus each frame's RMS before normalization.
+fn frame_and_normalize(audio16: &[f32]) -> (Vec<[f32; WINDOW]>, Vec<f32>) {
     let pad = WINDOW / 2;
     // Center padding (zeros), matching torch F.pad.
     let mut padded = vec![0.0f32; audio16.len() + 2 * pad];
     padded[pad..pad + audio16.len()].copy_from_slice(audio16);
 
     if padded.len() < WINDOW {
-        return vec![];
+        return (vec![], vec![]);
     }
     let n_frames = (padded.len() - WINDOW) / HOP + 1;
     let mut frames = Vec::with_capacity(n_frames);
+    let mut rms = Vec::with_capacity(n_frames);
     for f in 0..n_frames {
         let start = f * HOP;
         let mut frame = [0.0f32; WINDOW];
         frame.copy_from_slice(&padded[start..start + WINDOW]);
+        rms.push((frame.iter().map(|s| s * s).sum::<f32>() / WINDOW as f32).sqrt());
         // per-frame mean/std normalization
         let mean = frame.iter().sum::<f32>() / WINDOW as f32;
         let mut var = 0.0f32;
@@ -147,5 +187,5 @@ fn frame_and_normalize(audio16: &[f32]) -> Vec<[f32; WINDOW]> {
         }
         frames.push(frame);
     }
-    frames
+    (frames, rms)
 }

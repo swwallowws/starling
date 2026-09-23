@@ -47,7 +47,7 @@ pub fn analyze(
     model: &CrepeModel,
     cfg: &AnalysisConfig,
 ) -> Result<Analysis> {
-    let raw = model.track(audio, sample_rate)?;
+    let raw = model.track_gated(audio, sample_rate, cfg.segmentation.rms_floor)?;
     let hop_s = pitch::HOP as f32 / pitch::CREPE_SR as f32;
     let feats = features::extract(audio, sample_rate, raw.len());
 
