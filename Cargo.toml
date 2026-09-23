@@ -24,8 +24,9 @@ anyhow = "1"
 thiserror = "2"
 
 [dev-dependencies]
-# WAV reading for the wav_to_midi example only; the library takes raw f32 samples.
-hound = "3.5"
+# Examples only; the library takes raw f32 samples and does no I/O.
+hound = "3.5" # WAV read/write
+cpal = "0.15" # mic capture (record_to_midi)
 
 # Optimize dependencies (notably tract) even in dev/test builds so model
 # inference isn't unusably slow during development; our own crate stays debug.
