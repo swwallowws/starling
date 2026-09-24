@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, render } from "./api";
+import { ApiError, currentTake, render } from "./api";
 import { DEFAULT_SETTINGS } from "./types";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -27,5 +27,15 @@ describe("api", () => {
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/render");
     expect(JSON.parse(init.body as string)).toEqual({ take_id: 7, settings: DEFAULT_SETTINGS });
+  });
+  it("reports no current take on 204", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
+    expect(await currentTake()).toBeNull();
+  });
+
+  it("returns the current take when one is open", async () => {
+    const body = { take_id: 3, info: { name: "a.wav" } };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body))));
+    expect(await currentTake()).toEqual(body);
   });
 });

@@ -282,6 +282,10 @@ pub fn handle(state: &mut State, method: &str, url: &str, body: &[u8]) -> Reply 
                 serde_json::json!({ "path": full.display().to_string(), "file_name": file_name }),
             )
         }
+        ("GET", "/api/current") => match &state.session {
+            Some(s) => ok_json(serde_json::json!({ "take_id": state.take_id, "info": s.info() })),
+            None => reply(204, "application/json", vec![]),
+        },
         ("GET", "/api/audio") => match &state.session {
             Some(s) => reply(200, "audio/wav", s.wav.clone()),
             None => err(409, "no take is open"),

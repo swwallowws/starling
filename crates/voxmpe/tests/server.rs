@@ -104,6 +104,14 @@ fn uploads_are_sanitized_unique_and_saved_before_analysis() {
 }
 
 #[test]
+fn current_is_empty_before_any_take() {
+    let mut st = State::new(None, temp_dir("cur"));
+    let r = handle(&mut st, "GET", "/api/current", b"");
+    assert_eq!(r.status, 204);
+    assert!(r.body.is_empty());
+}
+
+#[test]
 fn render_needs_the_current_take() {
     let mut st = State::new(None, temp_dir("409"));
     let body = serde_json::json!({ "take_id": 1, "settings": {} }).to_string();
@@ -124,6 +132,11 @@ fn full_flow_with_the_model() {
     let r = handle(&mut st, "POST", "/api/load?name=tone", &wav(1.0, 0.3));
     assert_eq!(r.status, 200);
     let id = json(&r)["take_id"].as_u64().unwrap();
+
+    let cur = handle(&mut st, "GET", "/api/current", b"");
+    assert_eq!(cur.status, 200);
+    assert_eq!(json(&cur)["take_id"].as_u64(), Some(id));
+    assert_eq!(json(&cur)["info"]["name"], "tone.wav");
 
     let stale = serde_json::json!({ "take_id": id + 1, "settings": {} }).to_string();
     assert_eq!(

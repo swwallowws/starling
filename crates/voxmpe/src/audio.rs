@@ -2,13 +2,23 @@
 
 use std::io::Cursor;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+
+/// Sample rates outside this range are corrupt or unusable (0 Hz would crash resampling).
+const MIN_RATE: u32 = 8_000;
+const MAX_RATE: u32 = 384_000;
 
 /// Decode WAV bytes to mono f32 + sample rate (multichannel is downmixed).
 pub fn decode_wav(bytes: &[u8]) -> Result<(Vec<f32>, u32)> {
     let mut reader =
         hound::WavReader::new(Cursor::new(bytes)).context("not a readable WAV file")?;
     let spec = reader.spec();
+    if !(MIN_RATE..=MAX_RATE).contains(&spec.sample_rate) {
+        bail!(
+            "unsupported sample rate {} Hz (expected {MIN_RATE} to {MAX_RATE})",
+            spec.sample_rate
+        );
+    }
     let channels = spec.channels.max(1) as usize;
     let samples: Vec<f32> = match spec.sample_format {
         hound::SampleFormat::Float => reader.samples::<f32>().collect::<Result<_, _>>()?,
@@ -96,6 +106,39 @@ mod tests {
         let (mono, got_sr) = decode_wav(&b).unwrap();
         assert_eq!(got_sr, sr);
         assert_eq!(mono, samples);
+    }
+
+    /// The browser layout (16-byte fmt, format 3, mono f32) with a chosen rate.
+    fn float_wav(sr: u32, samples: &[f32]) -> Vec<u8> {
+        let mut b = Vec::new();
+        b.extend_from_slice(b"RIFF");
+        b.extend_from_slice(&(36 + samples.len() as u32 * 4).to_le_bytes());
+        b.extend_from_slice(b"WAVEfmt ");
+        b.extend_from_slice(&16u32.to_le_bytes());
+        b.extend_from_slice(&3u16.to_le_bytes());
+        b.extend_from_slice(&1u16.to_le_bytes());
+        b.extend_from_slice(&sr.to_le_bytes());
+        b.extend_from_slice(&(sr * 4).to_le_bytes());
+        b.extend_from_slice(&4u16.to_le_bytes());
+        b.extend_from_slice(&32u16.to_le_bytes());
+        b.extend_from_slice(b"data");
+        b.extend_from_slice(&(samples.len() as u32 * 4).to_le_bytes());
+        for s in samples {
+            b.extend_from_slice(&s.to_le_bytes());
+        }
+        b
+    }
+
+    #[test]
+    fn rejects_unusable_sample_rates() {
+        for sr in [0, 1000, 1_000_000] {
+            assert!(
+                decode_wav(&float_wav(sr, &[0.1, 0.2])).is_err(),
+                "{sr} Hz accepted"
+            );
+        }
+        assert!(decode_wav(&float_wav(8_000, &[0.1])).is_ok());
+        assert!(decode_wav(&float_wav(384_000, &[0.1])).is_ok());
     }
 
     #[test]

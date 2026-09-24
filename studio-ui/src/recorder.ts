@@ -75,3 +75,6 @@ export function micError(e: unknown): string {
   if (name === "NotFoundError") return "No microphone found. Plug one in, or open a WAV instead.";
   return `Could not start recording: ${(e as Error)?.message ?? e}`;
 }
+
+/** Name an opened file's take after the file, without its extension. */
+export const takeNameFromFile = (fileName: string) => fileName.replace(/\.wav$/i, "");

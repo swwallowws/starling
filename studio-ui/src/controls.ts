@@ -1,3 +1,4 @@
+import type { SettingsStore } from "./settings-store";
 import { DEFAULT_SETTINGS, LEGATO, type Settings } from "./types";
 
 type NumKey = "hold_ms" | "jump_hold_ms" | "jump_cents" | "gap_ms" | "split_cents";
@@ -9,8 +10,19 @@ const SLIDERS: { key: NumKey; label: string; min: number; max: number; step: num
   { key: "split_cents", label: "Pitch move that splits", min: 30, max: 300, step: 5, unit: "c" },
 ];
 
-export function buildControls(root: HTMLElement, initial: Settings, onChange: (s: Settings) => void) {
-  let s = { ...initial };
+/** The segmentation settings these controls own; tuning and anchor belong to the tuning picker. */
+const segmentation = (s: Partial<Settings>): Partial<Settings> => ({
+  hold_ms: s.hold_ms,
+  jump_hold_ms: s.jump_hold_ms,
+  jump_cents: s.jump_cents,
+  gap_ms: s.gap_ms,
+  split_cents: s.split_cents,
+  onset_delta: s.onset_delta,
+});
+
+/** Sliders, onset, Legato/Reset and the flags line. Every change is a patch to
+ *  `store`, so settings changed elsewhere (tuning, anchor) are never overwritten. */
+export function buildControls(root: HTMLElement, store: SettingsStore) {
   root.innerHTML = "";
   const inputs = new Map<NumKey, [HTMLInputElement, HTMLElement]>();
 
@@ -18,7 +30,7 @@ export function buildControls(root: HTMLElement, initial: Settings, onChange: (s
     const label = document.createElement("label");
     const val = document.createElement("span");
     const input = Object.assign(document.createElement("input"), { type: "range", min: String(d.min), max: String(d.max), step: String(d.step) });
-    input.addEventListener("input", () => { s = { ...s, [d.key]: Number(input.value) }; sync(); onChange(s); });
+    input.addEventListener("input", () => store.patch({ [d.key]: Number(input.value) }));
     label.append(d.label, val, input);
     root.append(label);
     inputs.set(d.key, [input, val]);
@@ -28,8 +40,8 @@ export function buildControls(root: HTMLElement, initial: Settings, onChange: (s
   const onsetVal = document.createElement("span");
   const onsetRange = Object.assign(document.createElement("input"), { type: "range", min: "0.1", max: "3", step: "0.05" });
   const onsetOff = Object.assign(document.createElement("input"), { type: "checkbox" });
-  onsetRange.addEventListener("input", () => { s = { ...s, onset_delta: Number(onsetRange.value) }; sync(); onChange(s); });
-  onsetOff.addEventListener("change", () => { s = { ...s, onset_delta: onsetOff.checked ? null : Number(onsetRange.value) }; sync(); onChange(s); });
+  onsetRange.addEventListener("input", () => store.patch({ onset_delta: Number(onsetRange.value) }));
+  onsetOff.addEventListener("change", () => store.patch({ onset_delta: onsetOff.checked ? null : Number(onsetRange.value) }));
   const offLabel = document.createElement("span");
   offLabel.append(onsetOff, " off");
   onset.append("Loudness re-attack", onsetVal, onsetRange, offLabel);
@@ -38,9 +50,8 @@ export function buildControls(root: HTMLElement, initial: Settings, onChange: (s
   const buttons = document.createElement("div");
   const legato = Object.assign(document.createElement("button"), { textContent: "Legato" });
   const reset = Object.assign(document.createElement("button"), { textContent: "Reset" });
-  const keepTuning = (base: Settings): Settings => ({ ...base, tuning_name: s.tuning_name, tuning_scl: s.tuning_scl, anchor_hz: s.anchor_hz });
-  legato.addEventListener("click", () => { s = keepTuning({ ...DEFAULT_SETTINGS, ...LEGATO }); sync(); onChange(s); });
-  reset.addEventListener("click", () => { s = keepTuning(DEFAULT_SETTINGS); sync(); onChange(s); });
+  legato.addEventListener("click", () => store.patch(segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
+  reset.addEventListener("click", () => store.patch(segmentation(DEFAULT_SETTINGS)));
   buttons.append(legato, " ", reset);
   root.append(buttons);
 
@@ -51,7 +62,7 @@ export function buildControls(root: HTMLElement, initial: Settings, onChange: (s
   flags.append(code, " ", copy);
   root.append(flags);
 
-  function sync() {
+  function sync(s: Settings) {
     for (const [key, [input, val]] of inputs) {
       const d = SLIDERS.find((x) => x.key === key)!;
       input.value = String(s[key]);
@@ -64,9 +75,9 @@ export function buildControls(root: HTMLElement, initial: Settings, onChange: (s
     onsetRange.style.setProperty("--fill", `${((Number(onsetRange.value) - 0.1) / (3 - 0.1)) * 100}%`);
     onsetVal.textContent = s.onset_delta === null ? "off" : `+${Math.round(s.onset_delta * 100)}%`;
   }
-  sync();
+  sync(store.get());
+  store.subscribe(sync);
   return {
-    set(next: Settings) { s = { ...next }; sync(); },
     setFlags(text: string) { code.textContent = text || "(defaults)"; },
   };
 }

@@ -32,3 +32,7 @@ export function fromTime(a: Automation, t: number): Automation | null {
 
 /** The gain a note holds just before it ends: its last amplitude event. */
 export const releaseLevel = (a: Automation) => a.gain[a.gain.length - 1][1];
+
+/** Where Play starts: from the beginning once the take has played to its end. */
+export const startPoint = (from: number, duration: number) =>
+  from < 0 || from >= duration - 0.05 ? 0 : from;

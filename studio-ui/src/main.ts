@@ -2,14 +2,18 @@ import "./styles.css";
 import * as api from "./api";
 import { drawRoll } from "./roll";
 import { xToTime, type View } from "./coords";
-import type { LoadResp, RNote, Settings, TakeInfo } from "./types";
+import type { LoadResp, RNote, TakeInfo } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
 import { buildControls } from "./controls";
+import { spaceAction } from "./keys";
+import { createSettingsStore } from "./settings-store";
+import { createTuning, type TuningView } from "./tuning";
+import { startPoint } from "./synth";
 import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
 import { Player } from "./player";
-import { AUDIO_URL } from "./api";
-import { Recorder, defaultTakeName, micError } from "./recorder";
+import { AUDIO_URL, currentTake } from "./api";
+import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
 import { downloadUrlData, settingsKey } from "./export";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -18,12 +22,16 @@ export function say(text: string) {
   $("message").textContent = text;
 }
 
+/** Take-picker value that opens a WAV from anywhere on disk. */
+const OPEN_FILE = "__open_file__";
+
 async function refreshTakes(select?: string) {
   const takes = await api.listTakes();
   const sel = $<HTMLSelectElement>("takes");
   sel.textContent = "";
   sel.add(new Option("Open a take...", ""));
   for (const t of takes) sel.add(new Option(t, t));
+  sel.add(new Option("Open WAV...", OPEN_FILE));
   if (select) sel.value = select;
 }
 
@@ -45,26 +53,27 @@ window.addEventListener("resize", redraw);
 // Canvas colours are resolved per draw; redraw when the system scheme flips.
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 
-let settings: Settings = { ...DEFAULT_SETTINGS };
+/** The single owner of the settings; controls and the tuning picker send patches. */
+const store = createSettingsStore(DEFAULT_SETTINGS);
 
 const renderer = createRenderer(
   api.render,
   (r, s) => {
     app.notes = r.notes;
     controls.setFlags(r.flags);
-    if (s.tuning_scl === settings.tuning_scl) $("tuning-error").textContent = "";
+    tuning.renderOk(s);
     redraw();
     onNotesChanged();
     updateDrag();
   },
-  (msg) => {
-    $("tuning-error").textContent = `${msg} (kept the previous tuning)`;
-    settings = { ...settings, tuning_name: renderer.lastGood().tuning_name, tuning_scl: renderer.lastGood().tuning_scl };
-    $<HTMLSelectElement>("tuning").value = settings.tuning_name ? "loaded" : "";
-  },
+  (msg) => tuning.renderError(msg),
 );
-const rerender = throttleLatest(() => app.takeId && renderer.request(app.takeId, settings), 33);
-const controls = buildControls($("controls"), settings, (s) => { settings = s; rerender(); });
+const rerender = throttleLatest(() => app.takeId && renderer.request(app.takeId, store.get()), 33);
+const controls = buildControls($("controls"), store);
+store.subscribe(() => {
+  rerender();
+  updateDrag();
+});
 
 /** Hook for playback (Task 11) to reschedule when notes change. */
 export let onNotesChanged: () => void = () => {};
@@ -75,7 +84,7 @@ setOnNotesChanged(() => player.setNotes(app.notes));
 
 async function togglePlay() {
   if (player.playing) player.stop();
-  else player.play(app.playhead ?? 0);
+  else player.play(startPoint(app.playhead ?? 0, app.info?.duration_s ?? 0));
   $("play").textContent = player.playing ? "Stop (Space)" : "Play (Space)";
   tickPlayhead();
 }
@@ -98,15 +107,6 @@ $<HTMLCanvasElement>("roll").addEventListener("click", (e) => {
   if (player.playing) player.play(t);
   redraw();
 });
-export function onSpace(e: KeyboardEvent, recording: boolean) {
-  // Leave Space to form controls and buttons, which use it themselves.
-  const tag = (e.target as HTMLElement).tagName;
-  if (e.code !== "Space" || ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(tag)) return false;
-  e.preventDefault();
-  if (!recording) void togglePlay();
-  return true;
-}
-
 const recorder = new Recorder();
 const takeName = $<HTMLInputElement>("take-name");
 takeName.value = defaultTakeName(new Date());
@@ -148,7 +148,7 @@ let saved: { key: string; fileName: string; takeId: number } | null = null;
 const drag = $("drag");
 
 function updateDrag() {
-  const fresh = saved && saved.takeId === app.takeId && saved.key === settingsKey(settings);
+  const fresh = saved && saved.takeId === app.takeId && saved.key === settingsKey(store.get());
   drag.setAttribute("draggable", fresh ? "true" : "false");
   drag.textContent = fresh ? `Drag ${saved!.fileName} into Live` : saved ? "Save again to drag the latest" : "Save first to drag";
 }
@@ -156,6 +156,7 @@ function updateDrag() {
 $("save").addEventListener("click", async () => {
   if (!app.takeId) return;
   try {
+    const settings = store.get();
     const r = await api.exportMid(app.takeId, settings);
     saved = { key: settingsKey(settings), fileName: r.file_name, takeId: app.takeId };
     $("saved-path").textContent = r.path;
@@ -174,35 +175,54 @@ drag.addEventListener("dragstart", (e) => {
 $("reveal").addEventListener("click", () => void api.reveal());
 
 document.addEventListener("keydown", (e) => {
-  const tag = (e.target as HTMLElement).tagName;
-  const native = ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(tag);
-  if (recorder.active && e.code === "Space" && !native) { e.preventDefault(); void toggleRecord(); return; }
-  onSpace(e, recorder.active);
+  const action = spaceAction(e, recorder.active);
+  if (action === "none" || action === "native") return;
+  e.preventDefault();
+  if (action === "play") void togglePlay();
+  if (action === "record") void toggleRecord();
+});
+// A mouse click must not leave focus on a button, or Space would press it again.
+document.addEventListener("mousedown", (e) => {
+  if ((e.target as Element).closest("button")) e.preventDefault();
 });
 
 // Tuning picker and anchor.
 const tuningSel = $<HTMLSelectElement>("tuning");
 const sclFile = $<HTMLInputElement>("scl-file");
 const anchor = $<HTMLInputElement>("anchor");
-anchor.value = String(settings.anchor_hz);
+anchor.value = String(store.get().anchor_hz);
+
+let tuningView: TuningView = { choice: "12tet", loaded: null, error: null };
+function showTuning(v: TuningView) {
+  tuningView = v;
+  let opt = tuningSel.querySelector<HTMLOptionElement>('option[value="loaded"]');
+  if (v.loaded) {
+    if (!opt) {
+      opt = Object.assign(document.createElement("option"), { value: "loaded" });
+      tuningSel.insertBefore(opt, tuningSel.lastElementChild);
+    }
+    opt.textContent = v.loaded.name;
+  }
+  tuningSel.value = v.choice === "loaded" ? "loaded" : "";
+  $("tuning-error").textContent = v.error ? `${v.error} (kept the previous tuning)` : "";
+}
+const tuning = createTuning(store, showTuning);
+
 tuningSel.addEventListener("change", () => {
-  if (tuningSel.value === "load") { sclFile.click(); return; }
-  if (tuningSel.value === "") { settings = { ...settings, tuning_name: null, tuning_scl: null }; rerender(); }
+  if (tuningSel.value === "load") {
+    showTuning(tuningView); // keep showing the active tuning until a file renders
+    sclFile.click();
+  } else if (tuningSel.value === "loaded") tuning.chooseLoaded();
+  else tuning.choose12();
 });
 sclFile.addEventListener("change", async () => {
   const f = sclFile.files?.[0];
-  if (!f) return;
-  settings = { ...settings, tuning_name: f.name, tuning_scl: await f.text() };
-  let opt = tuningSel.querySelector<HTMLOptionElement>('option[value="loaded"]');
-  if (!opt) { opt = Object.assign(document.createElement("option"), { value: "loaded" }); tuningSel.insertBefore(opt, tuningSel.lastElementChild); }
-  opt.textContent = f.name;
-  tuningSel.value = "loaded";
   sclFile.value = "";
-  rerender();
+  if (f) tuning.loadFile({ name: f.name, scl: await f.text() });
 });
 anchor.addEventListener("change", () => {
   const hz = Number(anchor.value);
-  if (hz > 0) { settings = { ...settings, anchor_hz: hz }; rerender(); }
+  if (hz > 0) store.patch({ anchor_hz: hz });
 });
 
 export async function opened(r: LoadResp) {
@@ -217,11 +237,29 @@ export async function opened(r: LoadResp) {
   $("saved-path").textContent = "";
   $("reveal").hidden = true;
   updateDrag();
-  renderer.request(app.takeId, settings);
+  renderer.request(app.takeId, store.get());
 }
+
+const wavFile = $<HTMLInputElement>("wav-file");
+wavFile.addEventListener("change", async () => {
+  const f = wavFile.files?.[0];
+  wavFile.value = "";
+  if (!f) return;
+  say(`Analyzing ${f.name}...`);
+  try {
+    await opened(await api.uploadTake(takeNameFromFile(f.name), await f.arrayBuffer()));
+  } catch (err) {
+    say((err as Error).message);
+  }
+});
 
 $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
   const name = (e.target as HTMLSelectElement).value;
+  if (name === OPEN_FILE) {
+    (e.target as HTMLSelectElement).value = app.info?.name ?? "";
+    wavFile.click();
+    return;
+  }
   if (!name) return;
   say(`Analyzing ${name}...`);
   try {
@@ -231,4 +269,7 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
   }
 });
 
-refreshTakes().catch((e) => say(e.message));
+// Show a take the studio was started with (`voxmpe studio take.wav`), else just list takes.
+currentTake()
+  .then((r) => (r ? opened(r) : refreshTakes()))
+  .catch((e) => say(e.message));

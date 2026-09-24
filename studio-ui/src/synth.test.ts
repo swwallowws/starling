@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromTime, midiToHz, noteAutomation, releaseLevel } from "./synth";
+import { fromTime, midiToHz, noteAutomation, releaseLevel, startPoint } from "./synth";
 import type { RNote } from "./types";
 
 const n = (over: Partial<RNote> = {}): RNote => ({ pitch: 69, center: 69, start: 1, end: 2, velocity: 0.8, cause: "gap", bend: [], amp: [], ...over });
@@ -27,5 +27,11 @@ describe("synth", () => {
   });
   it("notes that ended are dropped", () => {
     expect(fromTime(noteAutomation(n()), 3)).toBeNull();
+  });
+  it("playing again after the end starts from the beginning", () => {
+    expect(startPoint(10, 10)).toBe(0);
+    expect(startPoint(9.97, 10)).toBe(0);
+    expect(startPoint(4, 10)).toBe(4);
+    expect(startPoint(-1, 10)).toBe(0);
   });
 });

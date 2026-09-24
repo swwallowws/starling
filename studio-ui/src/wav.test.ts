@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { concat, encodeWavFloat32 } from "./wav";
-import { defaultTakeName } from "./recorder";
+import { defaultTakeName, takeNameFromFile } from "./recorder";
 
 describe("wav", () => {
   it("writes the float WAV layout the server decodes", () => {
@@ -25,5 +25,10 @@ describe("wav", () => {
   });
   it("names takes by date and time", () => {
     expect(defaultTakeName(new Date(2026, 8, 24, 9, 5, 7))).toBe("take-20260924-090507");
+  });
+  it("names an opened file after the file, without its extension", () => {
+    expect(takeNameFromFile("Song idea.WAV")).toBe("Song idea");
+    expect(takeNameFromFile("verse.wav")).toBe("verse");
+    expect(takeNameFromFile("noext")).toBe("noext");
   });
 });

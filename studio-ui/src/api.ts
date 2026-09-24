@@ -39,3 +39,11 @@ export const render = (takeId: number, settings: Settings) =>
 export const exportMid = (takeId: number, settings: Settings) =>
   call<ExportResp>("/api/export", post({ take_id: takeId, settings }));
 export const reveal = () => call<void>("/api/reveal", { method: "POST" });
+
+/** The take the studio already has open (e.g. `voxmpe studio take.wav`), or null. */
+export async function currentTake(): Promise<LoadResp | null> {
+  const res = await fetch("/api/current");
+  if (res.status === 204) return null;
+  if (!res.ok) throw new ApiError(res.status, res.statusText || "request failed");
+  return (await res.json()) as LoadResp;
+}
