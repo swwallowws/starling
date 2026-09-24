@@ -7,6 +7,8 @@ import { DEFAULT_SETTINGS } from "./types";
 import { buildControls } from "./controls";
 import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
+import { Player } from "./player";
+import { AUDIO_URL } from "./api";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -65,6 +67,45 @@ const controls = buildControls($("controls"), settings, (s) => { settings = s; r
 export let onNotesChanged: () => void = () => {};
 export function setOnNotesChanged(f: () => void) { onNotesChanged = f; }
 
+const player = new Player();
+setOnNotesChanged(() => player.setNotes(app.notes));
+
+async function togglePlay() {
+  if (player.playing) player.stop();
+  else player.play(app.playhead ?? 0);
+  $("play").textContent = player.playing ? "Stop (Space)" : "Play (Space)";
+  tickPlayhead();
+}
+
+function tickPlayhead() {
+  app.playhead = player.position();
+  redraw();
+  if (player.playing) requestAnimationFrame(tickPlayhead);
+  else $("play").textContent = "Play (Space)";
+}
+
+$("play").addEventListener("click", togglePlay);
+document.querySelectorAll<HTMLInputElement>('input[name="listen"]').forEach((r) =>
+  r.addEventListener("change", () => player.setMode(r.value as "voice" | "midi" | "both")),
+);
+$<HTMLCanvasElement>("roll").addEventListener("click", (e) => {
+  if (!app.view) return;
+  const t = xToTime(app.view, e.offsetX);
+  app.playhead = t;
+  if (player.playing) player.play(t);
+  redraw();
+});
+export function onSpace(e: KeyboardEvent, recording: boolean) {
+  // Leave Space to form controls and buttons, which use it themselves.
+  const tag = (e.target as HTMLElement).tagName;
+  if (e.code !== "Space" || ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(tag)) return false;
+  e.preventDefault();
+  if (!recording) void togglePlay();
+  return true;
+}
+
+document.addEventListener("keydown", (e) => onSpace(e, false));
+
 // Tuning picker and anchor.
 const tuningSel = $<HTMLSelectElement>("tuning");
 const sclFile = $<HTMLInputElement>("scl-file");
@@ -95,6 +136,9 @@ export async function opened(r: LoadResp) {
   app.info = r.info;
   say(r.info.warning ?? `${r.info.name}: ${r.info.duration_s.toFixed(1)} s`);
   await refreshTakes(r.info.name);
+  player.stop();
+  app.playhead = 0;
+  await player.load(AUDIO_URL);
   renderer.request(app.takeId, settings);
 }
 
