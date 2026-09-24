@@ -97,8 +97,22 @@ mod tests {
         a: SettingsArgs,
     }
 
+    /// Split `flags` the way a real shell would (so quoted names with spaces
+    /// or apostrophes survive), then parse them.
     fn parse(flags: &str) -> Settings {
-        let args = std::iter::once("t").chain(flags.split_whitespace());
+        let out = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(format!("printf '%s\\0' {flags}"))
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "shell split failed for: {flags}");
+        let mut parts: Vec<String> = out
+            .stdout
+            .split(|&b| b == 0)
+            .map(|p| String::from_utf8(p.to_vec()).unwrap())
+            .collect();
+        parts.pop(); // trailing empty piece after the last NUL
+        let args = std::iter::once("t".to_string()).chain(parts);
         T::try_parse_from(args).unwrap().a.to_settings().unwrap()
     }
 
@@ -126,6 +140,17 @@ mod tests {
     fn flags_round_trip() {
         let scl = std::env::temp_dir().join(format!("voxmpe_rt_{}.scl", std::process::id()));
         std::fs::write(&scl, "! t\n5-EDO\n 5\n 240.\n 480.\n 720.\n 960.\n 2/1\n").unwrap();
+
+        // A directory whose own path contains a space, holding tuning files
+        // whose names need shell quoting (a plain space, and an apostrophe).
+        let dir = std::env::temp_dir().join(format!("voxmpe rt dir {}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let spaced = dir.join("my scale.scl");
+        let quoted = dir.join("user's scale.scl");
+        let scale_text = "! t\n5-EDO\n 5\n 240.\n 480.\n 720.\n 960.\n 2/1\n";
+        std::fs::write(&spaced, scale_text).unwrap();
+        std::fs::write(&quoted, scale_text).unwrap();
+
         let cases = [
             Settings::legato(),
             Settings {
@@ -145,11 +170,22 @@ mod tests {
                 tuning_scl: Some(std::fs::read_to_string(&scl).unwrap()),
                 ..Settings::default()
             },
+            Settings {
+                tuning_name: Some(spaced.display().to_string()),
+                tuning_scl: Some(std::fs::read_to_string(&spaced).unwrap()),
+                ..Settings::default()
+            },
+            Settings {
+                tuning_name: Some(quoted.display().to_string()),
+                tuning_scl: Some(std::fs::read_to_string(&quoted).unwrap()),
+                ..Settings::default()
+            },
         ];
         for s in cases {
             assert_eq!(parse(&s.to_flags()), s, "flags: {}", s.to_flags());
         }
         std::fs::remove_file(scl).ok();
+        std::fs::remove_dir_all(dir).ok();
     }
 
     #[test]

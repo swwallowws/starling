@@ -125,11 +125,7 @@ impl Settings {
             Some(_) => {}
         }
         if let Some(n) = &self.tuning_name {
-            if n.contains(char::is_whitespace) {
-                f.push(format!("--tuning '{n}'"));
-            } else {
-                f.push(format!("--tuning {n}"));
-            }
+            f.push(format!("--tuning {}", shell_quote(n)));
         }
         if self.anchor_hz != d.anchor_hz {
             f.push(format!("--anchor-hz {}", self.anchor_hz));
@@ -138,5 +134,17 @@ impl Settings {
             f.push(format!("--single-channel {r}"));
         }
         f.join(" ")
+    }
+}
+
+/// Quote `s` for a POSIX shell command line, only when needed.
+fn shell_quote(s: &str) -> String {
+    let plain = s
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || "._/-+:,@%".contains(c));
+    if plain {
+        s.to_string()
+    } else {
+        format!("'{}'", s.replace('\'', "'\\''"))
     }
 }
