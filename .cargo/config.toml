@@ -1,0 +1,4 @@
+# expressive-liveset is a private git dependency: fetch it with the system git,
+# which has the SSH key, instead of Cargo's built-in client.
+[net]
+git-fetch-with-cli = true
