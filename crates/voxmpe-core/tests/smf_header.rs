@@ -98,3 +98,13 @@ fn single_channel_file_has_no_mpe_config() {
     assert_eq!(rpn_value(&ccs, 0, 0), Some(2));
     assert_eq!(note_ch, 0);
 }
+
+#[test]
+fn smf_bytes_match_the_written_file() {
+    let path = std::env::temp_dir().join(format!("voxmpe_bytes_{}.mid", std::process::id()));
+    write_smf(&one_note(), OutputMode::Mpe, path.to_str().unwrap()).unwrap();
+    let from_file = std::fs::read(&path).unwrap();
+    std::fs::remove_file(&path).ok();
+    let bytes = voxmpe_core::smf::smf_bytes(&one_note(), OutputMode::Mpe).unwrap();
+    assert_eq!(bytes, from_file);
+}

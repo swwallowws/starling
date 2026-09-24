@@ -38,7 +38,10 @@ const TET12_SCL: &str = "! 12-tet.scl
 ";
 
 #[derive(Parser)]
-#[command(name = "microtonal-voxmidi", about = "Microtonal singing voice -> MPE MIDI (offline)")]
+#[command(
+    name = "microtonal-voxmidi",
+    about = "Microtonal singing voice -> MPE MIDI (offline)"
+)]
 struct Cli {
     /// Input WAV file (mono or stereo; any sample rate).
     input: String,

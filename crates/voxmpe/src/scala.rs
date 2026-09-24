@@ -43,10 +43,15 @@ impl Scale {
     fn parse_pitch(tok: &str) -> Result<f64, String> {
         let tok = tok.split_whitespace().next().unwrap_or("");
         if tok.contains('.') {
-            tok.parse::<f64>().map_err(|e| format!("bad cents '{tok}': {e}"))
+            tok.parse::<f64>()
+                .map_err(|e| format!("bad cents '{tok}': {e}"))
         } else if let Some((n, d)) = tok.split_once('/') {
-            let n: f64 = n.parse().map_err(|e| format!("bad ratio num '{tok}': {e}"))?;
-            let d: f64 = d.parse().map_err(|e| format!("bad ratio den '{tok}': {e}"))?;
+            let n: f64 = n
+                .parse()
+                .map_err(|e| format!("bad ratio num '{tok}': {e}"))?;
+            let d: f64 = d
+                .parse()
+                .map_err(|e| format!("bad ratio den '{tok}': {e}"))?;
             if d == 0.0 {
                 return Err(format!("zero denominator in '{tok}'"));
             }
@@ -95,9 +100,7 @@ impl Scale {
             .iter()
             .map(|l| Scale::parse_pitch(l))
             .collect::<Result<_, _>>()?;
-        let (period, period_slice) = entries
-            .split_last()
-            .ok_or("scale has no pitches")?;
+        let (period, period_slice) = entries.split_last().ok_or("scale has no pitches")?;
         // Degrees within a period: implicit 0.0 plus every entry except the period.
         let mut degrees = Vec::with_capacity(count);
         degrees.push(0.0);
@@ -126,11 +129,7 @@ impl Scale {
             return ScaleKind::Mode;
         }
         // Steps between successive degrees, plus the wrap step back to the period.
-        let mut steps: Vec<f64> = self
-            .degrees
-            .windows(2)
-            .map(|w| w[1] - w[0])
-            .collect();
+        let mut steps: Vec<f64> = self.degrees.windows(2).map(|w| w[1] - w[0]).collect();
         steps.push(self.period - self.degrees[n - 1]);
         let max = steps.iter().cloned().fold(f64::MIN, f64::max);
         let min = steps.iter().cloned().fold(f64::MAX, f64::min);

@@ -130,11 +130,13 @@ pub fn generate_major_triad(
     let (third_c, fifth_c) = match kind {
         ScaleKind::Mode => {
             // Ordinal: stack degrees i, i+2, i+4 with period wrap.
-            let degree_at = |j: usize| -> f64 {
-                scale.degrees[j % n] + (j / n) as f64 * scale.period
-            };
+            let degree_at =
+                |j: usize| -> f64 { scale.degrees[j % n] + (j / n) as f64 * scale.period };
             let base = degree_at(root_idx);
-            (degree_at(root_idx + 2) - base, degree_at(root_idx + 4) - base)
+            (
+                degree_at(root_idx + 2) - base,
+                degree_at(root_idx + 4) - base,
+            )
         }
         ScaleKind::EqualDivision => {
             // Ratio-snap: aim at tuning-native targets, snap to nearest degree.

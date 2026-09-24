@@ -15,7 +15,11 @@ use voxmpe_core::types::{Analysis, CurvePoint, Note};
 pub fn retune(analysis: &Analysis, tuning: &Tuning) -> Analysis {
     Analysis {
         frames: analysis.frames.clone(),
-        notes: analysis.notes.iter().map(|n| retune_note(n, tuning)).collect(),
+        notes: analysis
+            .notes
+            .iter()
+            .map(|n| retune_note(n, tuning))
+            .collect(),
         hop_s: analysis.hop_s,
     }
 }
@@ -79,7 +83,11 @@ mod tests {
     }
 
     fn one(analysis_note: Note) -> Analysis {
-        Analysis { frames: vec![], notes: vec![analysis_note], hop_s: 0.01 }
+        Analysis {
+            frames: vec![],
+            notes: vec![analysis_note],
+            hop_s: 0.01,
+        }
     }
 
     #[test]
@@ -87,18 +95,46 @@ mod tests {
         // Steady 30-cent-sharp A4 (pitch 69, bend ~+0.3). 12-TET retune -> pitch 69,
         // bend collapses toward 0 (the sharpness is corrected to 440).
         let t = Tuning::new(&Scale::parse(SCL_12TET).unwrap(), MIDDLE_C);
-        let out = retune(&one(note(69, 69.3, vec![CurvePoint { time: 0.0, value: 0.3 }])), &t);
+        let out = retune(
+            &one(note(
+                69,
+                69.3,
+                vec![CurvePoint {
+                    time: 0.0,
+                    value: 0.3,
+                }],
+            )),
+            &t,
+        );
         assert_eq!(out.notes[0].pitch, 69);
-        assert!(out.notes[0].bend[0].value.abs() < 0.01, "got {}", out.notes[0].bend[0].value);
+        assert!(
+            out.notes[0].bend[0].value.abs() < 0.01,
+            "got {}",
+            out.notes[0].bend[0].value
+        );
     }
 
     #[test]
     fn ji_retunes_a_near_e_to_the_pure_third_with_flat_bend() {
         // Near-E center (64.2) -> JI third: pitch 64, static bend ~-0.137 semitones.
         let t = Tuning::new(&Scale::parse(SCL_JI).unwrap(), MIDDLE_C);
-        let out = retune(&one(note(64, 64.2, vec![CurvePoint { time: 0.0, value: 0.2 }])), &t);
+        let out = retune(
+            &one(note(
+                64,
+                64.2,
+                vec![CurvePoint {
+                    time: 0.0,
+                    value: 0.2,
+                }],
+            )),
+            &t,
+        );
         assert_eq!(out.notes[0].pitch, 64);
-        assert!((out.notes[0].bend[0].value - (-0.137)).abs() < 0.01, "got {}", out.notes[0].bend[0].value);
+        assert!(
+            (out.notes[0].bend[0].value - (-0.137)).abs() < 0.01,
+            "got {}",
+            out.notes[0].bend[0].value
+        );
     }
 
     #[test]
@@ -106,7 +142,16 @@ mod tests {
         // Two samples differing by 0.1 semitone (vibrato) must still differ by 0.1
         // after retuning — only the constant offset changes, not the wiggle.
         let t = Tuning::new(&Scale::parse(SCL_JI).unwrap(), MIDDLE_C);
-        let b = vec![CurvePoint { time: 0.0, value: 0.15 }, CurvePoint { time: 0.5, value: 0.25 }];
+        let b = vec![
+            CurvePoint {
+                time: 0.0,
+                value: 0.15,
+            },
+            CurvePoint {
+                time: 0.5,
+                value: 0.25,
+            },
+        ];
         let out = retune(&one(note(64, 64.2, b)), &t);
         let d = out.notes[0].bend[1].value - out.notes[0].bend[0].value;
         assert!((d - 0.1).abs() < 1e-5, "vibrato depth changed: {d}");

@@ -8,7 +8,7 @@
 //!
 //! See MICROTONAL_SPEC.md for the design rationale and reference numbers.
 
-pub mod scala;
 pub mod chord;
 pub mod quantize;
 pub mod retune;
+pub mod scala;

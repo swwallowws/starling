@@ -94,7 +94,8 @@ fn assign_channels(notes: &[Note], mode: OutputMode) -> Vec<u8> {
     }
 }
 
-pub fn write_smf(analysis: &Analysis, mode: OutputMode, path: &str) -> Result<()> {
+/// Serialize `analysis` as a Standard MIDI File in memory.
+pub fn smf_bytes(analysis: &Analysis, mode: OutputMode) -> Result<Vec<u8>> {
     let mut events: Vec<Ev> = Vec::new();
     let range = mode.bend_range();
     let channels = assign_channels(&analysis.notes, mode);
@@ -227,7 +228,13 @@ pub fn write_smf(analysis: &Analysis, mode: OutputMode, path: &str) -> Result<()
         ),
         tracks: vec![track],
     };
-    smf.save(path)?;
+    let mut buf = Vec::new();
+    smf.write_std(&mut buf)?;
+    Ok(buf)
+}
+
+pub fn write_smf(analysis: &Analysis, mode: OutputMode, path: &str) -> Result<()> {
+    std::fs::write(path, smf_bytes(analysis, mode)?)?;
     Ok(())
 }
 

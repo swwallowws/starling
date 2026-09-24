@@ -40,37 +40,49 @@ pub use types::{Analysis, CurvePoint, Frame, Note};
 
 use anyhow::Result;
 
-/// Full pipeline: pitch track -> features -> voicing gate -> segment -> encode.
-pub fn analyze(
+/// Output of the slow stage ([`track`]): every analysis frame plus the hop size.
+/// Keep it to re-run [`transcribe`] with other settings without re-running CREPE.
+#[derive(Debug, Clone)]
+pub struct Frames {
+    pub frames: Vec<Frame>,
+    pub hop_s: f32,
+}
+
+/// Slow stage: CREPE pitch tracking + per-frame features, with the voicing gate
+/// from `cfg` applied. Frames below `cfg.segmentation.rms_floor` skip inference.
+pub fn track(
     audio: &[f32],
     sample_rate: u32,
     model: &CrepeModel,
     cfg: &AnalysisConfig,
-) -> Result<Analysis> {
+) -> Result<Frames> {
     let raw = model.track_gated(audio, sample_rate, cfg.segmentation.rms_floor)?;
     let hop_s = pitch::HOP as f32 / pitch::CREPE_SR as f32;
     let feats = features::extract(audio, sample_rate, raw.len());
-
-    // Merge into aligned frames + apply the voicing gate.
-    let sc = &cfg.segmentation;
-    let frames: Vec<Frame> = raw
+    let mut frames: Vec<Frame> = raw
         .iter()
         .zip(feats.iter())
-        .map(|(p, ft)| {
-            let voiced = p.confidence >= sc.confidence_threshold && ft.rms >= sc.rms_floor;
-            Frame {
-                time: p.time,
-                f0_hz: p.f0_hz,
-                confidence: p.confidence,
-                rms: ft.rms,
-                centroid_hz: ft.centroid_hz,
-                voiced,
-            }
+        .map(|(p, ft)| Frame {
+            time: p.time,
+            f0_hz: p.f0_hz,
+            confidence: p.confidence,
+            rms: ft.rms,
+            centroid_hz: ft.centroid_hz,
+            voiced: false,
         })
         .collect();
+    apply_voicing(&mut frames, &cfg.segmentation);
+    Ok(Frames { frames, hop_s })
+}
+
+/// Fast stage: voicing gate, segmentation and expression for `cfg`. Milliseconds.
+pub fn transcribe(frames: &Frames, cfg: &AnalysisConfig) -> Analysis {
+    let sc = &cfg.segmentation;
+    let hop_s = frames.hop_s;
+    let mut frames = frames.frames.clone();
+    apply_voicing(&mut frames, sc);
 
     let spans = segment::segment(&frames, hop_s, sc);
-
     let max_rms = frames.iter().map(|f| f.rms).fold(0.0f32, f32::max);
     let notes = spans
         .iter()
@@ -90,9 +102,25 @@ pub fn analyze(
         })
         .collect();
 
-    Ok(Analysis {
+    Analysis {
         frames,
         notes,
         hop_s,
-    })
+    }
+}
+
+/// Full pipeline: [`track`] then [`transcribe`].
+pub fn analyze(
+    audio: &[f32],
+    sample_rate: u32,
+    model: &CrepeModel,
+    cfg: &AnalysisConfig,
+) -> Result<Analysis> {
+    Ok(transcribe(&track(audio, sample_rate, model, cfg)?, cfg))
+}
+
+fn apply_voicing(frames: &mut [Frame], sc: &SegmentationConfig) {
+    for f in frames {
+        f.voiced = f.confidence >= sc.confidence_threshold && f.rms >= sc.rms_floor;
+    }
 }

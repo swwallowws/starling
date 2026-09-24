@@ -15,10 +15,18 @@ fn tet(n: usize) -> Vec<f64> {
     (0..n).map(|i| i as f64 * 1200.0 / n as f64).collect()
 }
 fn ji_major_mode() -> Vec<f64> {
-    [1.0, 9.0 / 8.0, 5.0 / 4.0, 4.0 / 3.0, 3.0 / 2.0, 5.0 / 3.0, 15.0 / 8.0]
-        .iter()
-        .map(|&r| cents(r))
-        .collect()
+    [
+        1.0,
+        9.0 / 8.0,
+        5.0 / 4.0,
+        4.0 / 3.0,
+        3.0 / 2.0,
+        5.0 / 3.0,
+        15.0 / 8.0,
+    ]
+    .iter()
+    .map(|&r| cents(r))
+    .collect()
 }
 fn bohlen_pierce() -> Vec<f64> {
     let step = 1200.0 * 3f64.log2() / 13.0;
@@ -41,7 +49,10 @@ fn ji_major_snaps_to_a_pure_beatless_triad() {
     let fifth = snap_interval(ideal_fifth(), &s, 1200.0);
     assert!((third - 386.31).abs() < 0.1, "3rd {third}");
     assert!((fifth - 701.96).abs() < 0.1, "5th {fifth}");
-    assert!(major_third_beat_hz(MIDDLE_C, third) < 0.1, "JI third must be beatless");
+    assert!(
+        major_third_beat_hz(MIDDLE_C, third) < 0.1,
+        "JI third must be beatless"
+    );
 }
 
 #[test]
@@ -50,8 +61,14 @@ fn tet31_third_is_near_pure_fifth_is_weaker() {
     let third = snap_interval(ideal_third(), &s, 1200.0);
     let fifth = snap_interval(ideal_fifth(), &s, 1200.0);
     assert!((third - ideal_third()).abs() < 1.0, "3rd err {third}");
-    assert!(major_third_beat_hz(MIDDLE_C, third) < 1.0, "31-TET third ~beatless");
-    assert!((fifth - ideal_fifth()) < -4.0, "5th should be ~5c flat, got {fifth}");
+    assert!(
+        major_third_beat_hz(MIDDLE_C, third) < 1.0,
+        "31-TET third ~beatless"
+    );
+    assert!(
+        (fifth - ideal_fifth()) < -4.0,
+        "5th should be ~5c flat, got {fifth}"
+    );
 }
 
 #[test]
@@ -61,7 +78,10 @@ fn tet12_third_audibly_beats() {
     assert_eq!(third, 400.0);
     assert!((third - ideal_third() - 13.69).abs() < 0.1);
     let beat = major_third_beat_hz(MIDDLE_C, third);
-    assert!((beat - 10.4).abs() < 0.5, "expected ~10.4 Hz beat, got {beat}");
+    assert!(
+        (beat - 10.4).abs() < 0.5,
+        "expected ~10.4 Hz beat, got {beat}"
+    );
 }
 
 #[test]
@@ -69,7 +89,10 @@ fn bohlen_pierce_with_octave_ratios_is_the_wrong_question() {
     let s = bohlen_pierce();
     let third = snap_interval(ideal_third(), &s, 1200.0 * 3f64.log2());
     assert!((third - ideal_third()) > 40.0, "far off: {third}");
-    assert!(major_third_beat_hz(MIDDLE_C, third) > 20.0, "should beat hard");
+    assert!(
+        major_third_beat_hz(MIDDLE_C, third) > 20.0,
+        "should beat hard"
+    );
 }
 
 // ===== Ordinal path: mode works, equal division makes a cluster =======
@@ -86,21 +109,30 @@ fn ordinal_on_an_equal_division_is_a_cluster_not_a_chord() {
     let s = tet(12);
     assert_eq!(s[2], 200.0);
     assert_eq!(s[4], 400.0);
-    assert!((s[2] - ideal_third()).abs() > 150.0, "ordinal 3rd is a cluster tone");
+    assert!(
+        (s[2] - ideal_third()).abs() > 150.0,
+        "ordinal 3rd is a cluster tone"
+    );
 }
 
 // ===== The "no stable triad" guard is a threshold on a number =========
 
 #[test]
 fn beat_rate_guard_separates_triad_from_no_triad() {
-    let pass_ji = major_third_beat_hz(MIDDLE_C, snap_interval(ideal_third(), &ji_major_mode(), 1200.0));
+    let pass_ji = major_third_beat_hz(
+        MIDDLE_C,
+        snap_interval(ideal_third(), &ji_major_mode(), 1200.0),
+    );
     let pass_31 = major_third_beat_hz(MIDDLE_C, snap_interval(ideal_third(), &tet(31), 1200.0));
     let fail_bp = major_third_beat_hz(
         MIDDLE_C,
         snap_interval(ideal_third(), &bohlen_pierce(), 1200.0 * 3f64.log2()),
     );
     assert!(pass_ji < NO_TRIAD_BEAT_HZ && pass_31 < NO_TRIAD_BEAT_HZ);
-    assert!(fail_bp > NO_TRIAD_BEAT_HZ, "BP mis-snap must trip the guard");
+    assert!(
+        fail_bp > NO_TRIAD_BEAT_HZ,
+        "BP mis-snap must trip the guard"
+    );
 }
 
 // ===== End-to-end: parse .scl -> route -> generate triad ==============
