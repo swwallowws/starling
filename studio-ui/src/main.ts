@@ -10,6 +10,7 @@ import { throttleLatest } from "./throttle";
 import { Player } from "./player";
 import { AUDIO_URL } from "./api";
 import { Recorder, defaultTakeName, micError } from "./recorder";
+import { downloadUrlData, settingsKey } from "./export";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -54,6 +55,7 @@ const renderer = createRenderer(
     if (s.tuning_scl === settings.tuning_scl) $("tuning-error").textContent = "";
     redraw();
     onNotesChanged();
+    updateDrag();
   },
   (msg) => {
     $("tuning-error").textContent = `${msg} (kept the previous tuning)`;
@@ -142,6 +144,35 @@ async function toggleRecord() {
 
 $("record").addEventListener("click", toggleRecord);
 
+let saved: { key: string; fileName: string; takeId: number } | null = null;
+const drag = $("drag");
+
+function updateDrag() {
+  const fresh = saved && saved.takeId === app.takeId && saved.key === settingsKey(settings);
+  drag.setAttribute("draggable", fresh ? "true" : "false");
+  drag.textContent = fresh ? `Drag ${saved!.fileName} into Live` : saved ? "Save again to drag the latest" : "Save first to drag";
+}
+
+$("save").addEventListener("click", async () => {
+  if (!app.takeId) return;
+  try {
+    const r = await api.exportMid(app.takeId, settings);
+    saved = { key: settingsKey(settings), fileName: r.file_name, takeId: app.takeId };
+    $("saved-path").textContent = r.path;
+    $("reveal").hidden = false;
+  } catch (e) {
+    say((e as Error).message);
+  }
+  updateDrag();
+});
+
+drag.addEventListener("dragstart", (e) => {
+  if (!saved) return;
+  e.dataTransfer?.setData("DownloadURL", downloadUrlData(saved.fileName, location.origin));
+});
+
+$("reveal").addEventListener("click", () => void api.reveal());
+
 document.addEventListener("keydown", (e) => {
   const tag = (e.target as HTMLElement).tagName;
   const native = ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(tag);
@@ -182,6 +213,10 @@ export async function opened(r: LoadResp) {
   player.stop();
   app.playhead = 0;
   await player.load(AUDIO_URL);
+  // A new take: the previous export no longer applies.
+  $("saved-path").textContent = "";
+  $("reveal").hidden = true;
+  updateDrag();
   renderer.request(app.takeId, settings);
 }
 
