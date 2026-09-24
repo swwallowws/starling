@@ -42,6 +42,9 @@ use anyhow::Result;
 
 /// Output of the slow stage ([`track`]): every analysis frame plus the hop size.
 /// Keep it to re-run [`transcribe`] with other settings without re-running CREPE.
+///
+/// `voiced` reflects the cfg passed to [`track`]. [`transcribe`] recomputes it
+/// from its own cfg.
 #[derive(Debug, Clone)]
 pub struct Frames {
     pub frames: Vec<Frame>,
@@ -76,6 +79,10 @@ pub fn track(
 }
 
 /// Fast stage: voicing gate, segmentation and expression for `cfg`. Milliseconds.
+///
+/// May use a higher `rms_floor` than [`track`] did, but not a lower one:
+/// frames below track()'s floor were never analyzed (confidence 0), so
+/// re-run [`track`] to lower it.
 pub fn transcribe(frames: &Frames, cfg: &AnalysisConfig) -> Analysis {
     let sc = &cfg.segmentation;
     let hop_s = frames.hop_s;
