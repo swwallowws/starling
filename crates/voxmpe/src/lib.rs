@@ -15,5 +15,6 @@ pub mod model;
 pub mod quantize;
 pub mod retune;
 pub mod scala;
+pub mod server;
 pub mod session;
 pub mod settings;
