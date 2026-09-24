@@ -2,8 +2,11 @@ import "./styles.css";
 import * as api from "./api";
 import { drawRoll } from "./roll";
 import { xToTime, type View } from "./coords";
-import type { LoadResp, RNote, TakeInfo } from "./types";
+import type { LoadResp, RNote, Settings, TakeInfo } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
+import { buildControls } from "./controls";
+import { createRenderer } from "./renderer";
+import { throttleLatest } from "./throttle";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -38,13 +41,61 @@ window.addEventListener("resize", redraw);
 // Canvas colours are resolved per draw; redraw when the system scheme flips.
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 
+let settings: Settings = { ...DEFAULT_SETTINGS };
+
+const renderer = createRenderer(
+  api.render,
+  (r, s) => {
+    app.notes = r.notes;
+    controls.setFlags(r.flags);
+    if (s.tuning_scl === settings.tuning_scl) $("tuning-error").textContent = "";
+    redraw();
+    onNotesChanged();
+  },
+  (msg) => {
+    $("tuning-error").textContent = `${msg} (kept the previous tuning)`;
+    settings = { ...settings, tuning_name: renderer.lastGood().tuning_name, tuning_scl: renderer.lastGood().tuning_scl };
+    $<HTMLSelectElement>("tuning").value = settings.tuning_name ? "loaded" : "";
+  },
+);
+const rerender = throttleLatest(() => app.takeId && renderer.request(app.takeId, settings), 33);
+const controls = buildControls($("controls"), settings, (s) => { settings = s; rerender(); });
+
+/** Hook for playback (Task 11) to reschedule when notes change. */
+export let onNotesChanged: () => void = () => {};
+export function setOnNotesChanged(f: () => void) { onNotesChanged = f; }
+
+// Tuning picker and anchor.
+const tuningSel = $<HTMLSelectElement>("tuning");
+const sclFile = $<HTMLInputElement>("scl-file");
+const anchor = $<HTMLInputElement>("anchor");
+anchor.value = String(settings.anchor_hz);
+tuningSel.addEventListener("change", () => {
+  if (tuningSel.value === "load") { sclFile.click(); return; }
+  if (tuningSel.value === "") { settings = { ...settings, tuning_name: null, tuning_scl: null }; rerender(); }
+});
+sclFile.addEventListener("change", async () => {
+  const f = sclFile.files?.[0];
+  if (!f) return;
+  settings = { ...settings, tuning_name: f.name, tuning_scl: await f.text() };
+  let opt = tuningSel.querySelector<HTMLOptionElement>('option[value="loaded"]');
+  if (!opt) { opt = Object.assign(document.createElement("option"), { value: "loaded" }); tuningSel.insertBefore(opt, tuningSel.lastElementChild); }
+  opt.textContent = f.name;
+  tuningSel.value = "loaded";
+  sclFile.value = "";
+  rerender();
+});
+anchor.addEventListener("change", () => {
+  const hz = Number(anchor.value);
+  if (hz > 0) { settings = { ...settings, anchor_hz: hz }; rerender(); }
+});
+
 export async function opened(r: LoadResp) {
   app.takeId = r.take_id;
   app.info = r.info;
   say(r.info.warning ?? `${r.info.name}: ${r.info.duration_s.toFixed(1)} s`);
   await refreshTakes(r.info.name);
-  app.notes = (await api.render(app.takeId, DEFAULT_SETTINGS)).notes;
-  redraw();
+  renderer.request(app.takeId, settings);
 }
 
 $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
