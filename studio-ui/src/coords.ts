@@ -4,13 +4,25 @@ export interface View { t0: number; t1: number; pLo: number; pHi: number; width:
 
 const PAD = 2;
 const MIN_SPAN = 12;
+const OUTLIER = 12;
 
 export function fitView(info: TakeInfo, notes: RNote[], width: number, height: number): View {
   const ps: number[] = [];
-  for (const c of info.contour) if (c !== null) ps.push(c);
   for (const n of notes) ps.push(n.pitch, n.center);
-  let lo = ps.length ? Math.min(...ps) - PAD : 57;
-  let hi = ps.length ? Math.max(...ps) + PAD : 72;
+  // The sung contour widens the view only near the notes: readings more than
+  // an octave outside them are misreadings (breaths, octave errors).
+  let nLo = Infinity;
+  let nHi = -Infinity;
+  for (const p of ps) { nLo = Math.min(nLo, p); nHi = Math.max(nHi, p); }
+  for (const c of info.contour) {
+    if (c === null) continue;
+    if (!ps.length || (c >= nLo - OUTLIER && c <= nHi + OUTLIER)) ps.push(c);
+  }
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const p of ps) { lo = Math.min(lo, p); hi = Math.max(hi, p); }
+  lo = ps.length ? lo - PAD : 57;
+  hi = ps.length ? hi + PAD : 72;
   if (hi - lo < MIN_SPAN) {
     const mid = (hi + lo) / 2;
     lo = mid - MIN_SPAN / 2;

@@ -27,7 +27,7 @@ input[type="range"]:disabled { opacity: 0.4; }
 #controls h3 { font-size: 13px; font-weight: 600; margin: calc(var(--space) * 2) 0 var(--space); color: var(--ink-mut); }
 .legend { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; margin-left: auto; color: var(--ink-mut); font-size: 12px; }
 .legend .mk, .legend .ln { display: inline-block; }
-.legend .mk.bar { width: 2px; height: 8px; background: var(--ink); }
+.legend .mk.tick { width: 2px; height: 8px; background: var(--ink); }
 .legend .mk.slash { width: 1px; height: 9px; background: var(--ink); transform: rotate(30deg); }
 .legend .ln { width: 16px; border-top: 1px solid var(--ink); }
 .legend .ln.mut { border-top-color: var(--ink-mut); opacity: 0.5; }

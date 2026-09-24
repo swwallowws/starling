@@ -27,4 +27,9 @@ describe("coords", () => {
     expect(v.t1).toBeGreaterThan(v.t0);
     expect(v.pHi).toBeGreaterThan(v.pLo);
   });
+  it("ignores stray contour readings far outside the notes", () => {
+    const noisy: TakeInfo = { ...info, contour: [60, 62, 24, 30, 61] };
+    const v = fitView(noisy, [note(60), note(64)], 800, 400);
+    expect(v.pLo).toBeGreaterThan(40);
+  });
 });
