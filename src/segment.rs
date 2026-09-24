@@ -17,6 +17,20 @@ use crate::types::Frame;
 pub struct Span {
     pub start: usize,
     pub end: usize,
+    /// Which cue started this note. Useful for tuning [`SegmentationConfig`].
+    pub cause: Cause,
+}
+
+/// Why a note boundary was placed where it was.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Cause {
+    /// Start of a voiced run: after silence, or an unvoiced gap (e.g. a consonant)
+    /// of at least `voicing_gap_ms`.
+    Voicing,
+    /// The pitch moved by `split_cents` and held for `hold_time_ms`.
+    PitchChange,
+    /// Same pitch re-attacked: an amplitude dip then a rise of `onset_rms_delta`.
+    Reattack,
 }
 
 /// Hz -> fractional MIDI note number (semitones). Expressed via the shared
@@ -194,6 +208,7 @@ fn segment_run(
 
     let mut raw = Vec::new();
     let mut start = a;
+    let mut cause = Cause::Voicing;
     // amplitude-onset state: a re-articulation is a real dip below the note's
     // peak followed by recovery — distinct from the initial attack ramp.
     let mut peak = rms[a];
@@ -203,7 +218,7 @@ fn segment_run(
     let mut k = a + 1;
     while k < b {
         let len = k - start;
-        let mut boundary = false;
+        let mut boundary = None;
 
         // (cue 2) pitch-stability break: a forward window that has moved to a new
         // center *and* is itself settled. Require the current note to have held
@@ -215,7 +230,7 @@ fn segment_run(
             if fw_end - k >= min_run {
                 let fw = &stf[k..fw_end];
                 if (median(fw) - center).abs() >= split_st && std_dev(fw) <= stability_st {
-                    boundary = true;
+                    boundary = Some(Cause::PitchChange);
                 }
             }
         }
@@ -233,20 +248,29 @@ fn segment_run(
                 && rms[k] > cfg.rms_floor * 2.0
                 && rms[k] > rms[k - 1]
             {
-                boundary = true;
+                boundary = boundary.or(Some(Cause::Reattack));
             }
         }
 
-        if boundary {
-            raw.push(Span { start, end: k });
+        if let Some(next) = boundary {
+            raw.push(Span {
+                start,
+                end: k,
+                cause,
+            });
             start = k;
+            cause = next;
             peak = rms[k];
             armed = false;
             trough = rms[k];
         }
         k += 1;
     }
-    raw.push(Span { start, end: b });
+    raw.push(Span {
+        start,
+        end: b,
+        cause,
+    });
 
     // Drop/merge sub-minimum segments into the previous span.
     for span in raw {

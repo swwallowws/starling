@@ -21,14 +21,12 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SampleFormat, SizedSample};
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let mut single = false;
+    let opts = common::parse_args()?;
     let mut seconds: Option<f32> = None;
     let mut names = Vec::new();
-    let mut it = args.iter();
+    let mut it = opts.rest.iter();
     while let Some(a) = it.next() {
         match a.as_str() {
-            "--single-channel" => single = true,
             "--seconds" => {
                 let v = it.next().context("--seconds needs a number")?;
                 seconds = Some(v.parse().with_context(|| format!("bad --seconds {v}"))?);
@@ -38,7 +36,8 @@ fn main() -> Result<()> {
     }
     let [base] = names[..] else {
         bail!(
-            "usage: record_to_midi <name> [--seconds N] [--single-channel]  (writes <name>.wav + <name>.mid)"
+            "usage: record_to_midi <name> [--seconds N] [flags]  (writes <name>.wav + <name>.mid)\n{}",
+            common::FLAGS_HELP
         );
     };
 
@@ -86,7 +85,7 @@ fn main() -> Result<()> {
     let wav = format!("{base}.wav");
     write_wav(&wav, &audio, sr)?;
     println!("wrote {wav}");
-    common::transcribe(&audio, sr, &model, &format!("{base}.mid"), single)
+    common::transcribe(&audio, sr, &model, &format!("{base}.mid"), &opts)
 }
 
 /// Input stream that downmixes each frame to mono f32 and appends it to `buf`.

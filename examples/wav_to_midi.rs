@@ -8,22 +8,25 @@
 //! Default output is MPE (per-note pitch bend on channels 2-16, bend range ±48).
 //! `--single-channel` writes plain channel-1 MIDI with a ±2 bend range for
 //! instruments without MPE. Set `VOXMIDI_MODEL` to use a model outside `models/`.
+//! `--why` shows what started each note; `--legato` and the `--*-ms` knobs tune
+//! segmentation (run with `--help` for the list).
 
 mod common;
 
 use anyhow::{bail, Context, Result};
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let single = args.iter().any(|a| a == "--single-channel");
-    let paths: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
-    let [input, output] = paths[..] else {
-        bail!("usage: wav_to_midi <in.wav> <out.mid> [--single-channel]");
+    let opts = common::parse_args()?;
+    let [input, output] = &opts.rest[..] else {
+        bail!(
+            "usage: wav_to_midi <in.wav> <out.mid> [flags]\n{}",
+            common::FLAGS_HELP
+        );
     };
 
     let model = common::load_model()?;
     let (audio, sr) = read_wav(input)?;
-    common::transcribe(&audio, sr, &model, output, single)
+    common::transcribe(&audio, sr, &model, output, &opts)
 }
 
 /// Read a WAV into mono f32 + sample rate (multichannel is downmixed).

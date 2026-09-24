@@ -6,3 +6,4 @@
 
 # Voice takes from record_to_midi: personal recordings, never committed.
 /takes
+.DS_Store
