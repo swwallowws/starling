@@ -3,3 +3,6 @@
 # Model blobs are large (85 MB CREPE) — fetched/copied locally, never committed.
 /models
 /models/*.onnx
+
+# Voice takes from record_to_midi: personal recordings, never committed.
+/takes
