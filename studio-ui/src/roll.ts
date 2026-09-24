@@ -1,12 +1,23 @@
 import { cssColor } from "../vendor/design/tokens.js";
 import { isBlackKey, noteStrength, tint } from "./colors";
 import { fitView, pitchToY, timeToX, type View } from "./coords";
+import { clampWin, type Win } from "./zoom";
 import type { RNote, TakeInfo } from "./types";
 
 export const LOUDNESS_LANE = 48;
 const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote[], playhead: number | null): View {
+/** Rows at least this tall get every note named, not just the Cs. */
+const NAME_EVERY_ROW = 14;
+
+/** Draw the roll, zoomed to `zoom` when given. Returns what is on screen and the whole fitted view. */
+export function drawRoll(
+  canvas: HTMLCanvasElement,
+  info: TakeInfo,
+  notes: RNote[],
+  playhead: number | null,
+  zoom: Win | null = null,
+): { view: View; fit: View } {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -27,10 +38,16 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
 
   g.fillStyle = c.ground;
   g.fillRect(0, 0, w, h);
-  const v = fitView(info, notes, w, h - LOUDNESS_LANE);
+  const fit = fitView(info, notes, w, h - LOUDNESS_LANE);
+  const v: View = zoom ? { ...clampWin(zoom, fit), width: fit.width, height: fit.height } : fit;
   const row = v.height / (v.pHi - v.pLo);
 
   // Key bands: black-key rows in --band, no lines. Octave label at each C.
+  // Everything pitched stays above the loudness lane when zoomed.
+  g.save();
+  g.beginPath();
+  g.rect(0, 0, w, v.height);
+  g.clip();
   g.font = `10px ${font}`;
   g.textBaseline = "middle";
   for (let p = Math.floor(v.pLo); p <= Math.ceil(v.pHi); p++) {
@@ -39,9 +56,9 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
       g.fillStyle = c.band;
       g.fillRect(0, top, w, row);
     }
-    if (p % 12 === 0) {
+    if (p % 12 === 0 || row >= NAME_EVERY_ROW) {
       g.fillStyle = c.mut;
-      g.fillText(`${NAMES[0]}${p / 12 - 1}`, 4, pitchToY(v, p));
+      g.fillText(`${NAMES[((p % 12) + 12) % 12]}${Math.floor(p / 12) - 1}`, 4, pitchToY(v, p));
     }
   }
 
@@ -97,6 +114,8 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
     }
   }
 
+  g.restore();
+
   // Loudness lane: --ink-mut on a --band strip.
   const top = h - LOUDNESS_LANE;
   g.fillStyle = c.band;
@@ -104,7 +123,7 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
   g.fillStyle = c.mut;
   info.loudness.forEach((l, i) => {
     const x = timeToX(v, i * info.hop_s);
-    g.fillRect(x, h - l * (LOUDNESS_LANE - 4), Math.max(1, timeToX(v, info.hop_s)), l * (LOUDNESS_LANE - 4));
+    g.fillRect(x, h - l * (LOUDNESS_LANE - 4), Math.max(1, timeToX(v, info.hop_s) - timeToX(v, 0)), l * (LOUDNESS_LANE - 4));
   });
 
   if (playhead !== null) {
@@ -112,5 +131,5 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
     const x = Math.round(timeToX(v, playhead)) + 0.5;
     g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
   }
-  return v;
+  return { view: v, fit };
 }

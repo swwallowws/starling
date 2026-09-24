@@ -19,6 +19,7 @@
       <input id="anchor-custom" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
       <span id="tuning-error" class="error" role="alert"></span>
       <span id="note-count"></span>
+      <button id="fit" hidden title="Show the whole take (double-click the roll, or press 0)">Fit</button>
     </header>
     <p id="message" class="message" role="status"></p>
     <main>
@@ -46,6 +47,7 @@
         <span>no mark: after a gap</span>
         <span class="ln"></span> MIDI pitch
         <span class="ln mut"></span> sung pitch
+        <span>pinch or ⌘+scroll to zoom, drag to pan</span>
       </span>
     </footer>
     <script type="module" src="/src/main.ts"></script>

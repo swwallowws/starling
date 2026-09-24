@@ -1,11 +1,12 @@
 import "./styles.css";
 import * as api from "./api";
 import { drawRoll } from "./roll";
-import { xToTime, type View } from "./coords";
+import { attachRollInput } from "./roll-input";
+import type { View } from "./coords";
 import type { LoadResp, Preset, RNote, TakeInfo } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
 import { buildControls } from "./controls";
-import { spaceAction } from "./keys";
+import { spaceAction, zoomKey } from "./keys";
 import { createSettingsStore } from "./settings-store";
 import { createTuning, type TuningView } from "./tuning";
 import { anchorNotes, formatHz, matchAnchor } from "./anchor";
@@ -43,13 +44,28 @@ export const app = {
   notes: [] as RNote[],
   playhead: null as number | null,
   view: null as View | null,
+  fit: null as View | null,
 };
 
 export function redraw() {
   if (!app.info) return;
-  app.view = drawRoll($<HTMLCanvasElement>("roll"), app.info, app.notes, app.playhead);
+  const { view, fit } = drawRoll($<HTMLCanvasElement>("roll"), app.info, app.notes, app.playhead, rollInput.zoom());
+  app.view = view;
+  app.fit = fit;
+  $("fit").hidden = !rollInput.zoomed();
   $("note-count").textContent = `${app.notes.length} notes`;
 }
+
+const rollInput = attachRollInput($<HTMLCanvasElement>("roll"), {
+  views: () => (app.view && app.fit ? { view: app.view, fit: app.fit } : null),
+  seek(t) {
+    app.playhead = t;
+    if (player.playing) player.play(t);
+    redraw();
+  },
+  redraw,
+});
+$("fit").addEventListener("click", () => rollInput.reset());
 
 window.addEventListener("resize", redraw);
 // Canvas colours are resolved per draw; redraw when the system scheme flips.
@@ -93,6 +109,7 @@ async function togglePlay() {
 
 function tickPlayhead() {
   app.playhead = player.position();
+  rollInput.follow(app.playhead);
   redraw();
   if (player.playing) requestAnimationFrame(tickPlayhead);
   else $("play").textContent = "Play (Space)";
@@ -102,13 +119,6 @@ $("play").addEventListener("click", togglePlay);
 document.querySelectorAll<HTMLInputElement>('input[name="listen"]').forEach((r) =>
   r.addEventListener("change", () => player.setMode(r.value as "voice" | "midi" | "both")),
 );
-$<HTMLCanvasElement>("roll").addEventListener("click", (e) => {
-  if (!app.view) return;
-  const t = xToTime(app.view, e.offsetX);
-  app.playhead = t;
-  if (player.playing) player.play(t);
-  redraw();
-});
 const recorder = new Recorder();
 const takeName = $<HTMLInputElement>("take-name");
 takeName.value = defaultTakeName(new Date());
@@ -217,6 +227,12 @@ $("save").addEventListener("click", async () => {
 $("reveal").addEventListener("click", () => void api.reveal());
 
 document.addEventListener("keydown", (e) => {
+  const zk = zoomKey(e);
+  if (zk !== "none" && app.info) {
+    e.preventDefault();
+    rollInput.key(zk);
+    return;
+  }
   const action = spaceAction(e, recorder.active);
   if (action === "none" || action === "native") return;
   e.preventDefault();
@@ -305,6 +321,7 @@ export async function opened(r: LoadResp) {
   say(r.info.warning ?? `${r.info.name}: ${r.info.duration_s.toFixed(1)} s`);
   await refreshTakes(r.info.name);
   player.stop();
+  rollInput.clear();
   app.playhead = 0;
   await player.load(AUDIO_URL);
   // A new take: the previous export no longer applies.

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { spaceAction } from "./keys";
+import { spaceAction, zoomKey } from "./keys";
 
 const el = (html: string) => {
   const d = document.createElement("div");
@@ -26,5 +26,23 @@ describe("spaceAction", () => {
   it("ignores key repeat and other keys", () => {
     expect(spaceAction(ev(document.body, true), false)).toBe("ignore");
     expect(spaceAction(ev(document.body, false, "Enter"), false)).toBe("none");
+  });
+});
+
+describe("zoomKey", () => {
+  const on = (tag: string, type = "") => Object.assign(document.createElement(tag), type ? { type } : {});
+  it("maps + - 0 on the page", () => {
+    expect(zoomKey({ key: "+", metaKey: false, ctrlKey: false, target: document.body })).toBe("in");
+    expect(zoomKey({ key: "=", metaKey: false, ctrlKey: false, target: document.body })).toBe("in");
+    expect(zoomKey({ key: "-", metaKey: false, ctrlKey: false, target: document.body })).toBe("out");
+    expect(zoomKey({ key: "0", metaKey: false, ctrlKey: false, target: document.body })).toBe("fit");
+    expect(zoomKey({ key: "a", metaKey: false, ctrlKey: false, target: document.body })).toBe("none");
+  });
+  it("leaves typing fields, selects and browser zoom alone", () => {
+    expect(zoomKey({ key: "0", metaKey: false, ctrlKey: false, target: on("input", "number") })).toBe("none");
+    expect(zoomKey({ key: "-", metaKey: false, ctrlKey: false, target: on("input", "text") })).toBe("none");
+    expect(zoomKey({ key: "+", metaKey: false, ctrlKey: false, target: on("select") })).toBe("none");
+    expect(zoomKey({ key: "+", metaKey: true, ctrlKey: false, target: document.body })).toBe("none");
+    expect(zoomKey({ key: "-", metaKey: false, ctrlKey: false, target: on("input", "range") })).toBe("out");
   });
 });
