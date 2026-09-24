@@ -201,6 +201,9 @@ fn segment_run(
     out: &mut Vec<Span>,
 ) {
     let hold = ms_to_frames(cfg.hold_time_ms, hop_s);
+    let jump_hold = ms_to_frames(cfg.jump_hold_ms, hop_s);
+    let min_hold = hold.min(jump_hold);
+    let jump_st = cfg.jump_cents / 100.0;
     let min_run = ms_to_frames(cfg.min_voiced_run_ms, hop_s);
     let stability_st = cfg.stability_cents / 100.0;
     let split_st = cfg.split_cents / 100.0;
@@ -222,15 +225,29 @@ fn segment_run(
 
         // (cue 2) pitch-stability break: a forward window that has moved to a new
         // center *and* is itself settled. Require the current note to have held
-        // for `hold` first so its center is established (not an attack transient),
-        // and use a robust center so a leading scoop doesn't corrupt it.
-        if len >= hold {
+        // for the hold time first so its center is established (not an attack
+        // transient), and use a robust center so a leading scoop doesn't corrupt it.
+        // The hold time depends on the size of the move: a short probe window
+        // measures the interval, bigger jumps need less hold (see `jump_hold_ms`).
+        if len >= min_hold {
             let center = robust_center(&stf[start..k], stability_st);
-            let fw_end = (k + hold).min(b);
-            if fw_end - k >= min_run {
-                let fw = &stf[k..fw_end];
-                if (median(fw) - center).abs() >= split_st && std_dev(fw) <= stability_st {
-                    boundary = Some(Cause::PitchChange);
+            let probe_end = (k + min_hold).min(b);
+            let interval = (median(&stf[k..probe_end]) - center).abs();
+            // A window cut short by the end of the run must still span `min_run`;
+            // a window that is short by design (small `jump_hold_ms`) is fine.
+            if probe_end - k >= min_hold.min(min_run) && interval >= split_st {
+                let t = if jump_st > split_st {
+                    ((interval - split_st) / (jump_st - split_st)).clamp(0.0, 1.0)
+                } else {
+                    1.0
+                };
+                let need = (hold as f32 + (jump_hold as f32 - hold as f32) * t).round() as usize;
+                let fw_end = (k + need).min(b);
+                if len >= need && fw_end - k >= need.min(min_run) {
+                    let fw = &stf[k..fw_end];
+                    if (median(fw) - center).abs() >= split_st && std_dev(fw) <= stability_st {
+                        boundary = Some(Cause::PitchChange);
+                    }
                 }
             }
         }

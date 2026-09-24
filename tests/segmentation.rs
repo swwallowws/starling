@@ -156,3 +156,31 @@ fn fractional_pitch_center_is_preserved() {
         "fractional center should be ~+30c off A4, got {cents_off:+.1}c"
     );
 }
+
+/// Adaptive hold: with a short `jump_hold_ms` (below `min_voiced_run_ms`), a clear
+/// 3-semitone slide must still split, and a small 40-cent drift must not.
+#[test]
+fn adaptive_hold_splits_jumps_not_drift() {
+    let Some(model) = load_model() else { return };
+    let mut cfg = AnalysisConfig::default();
+    cfg.segmentation.hold_time_ms = 150.0;
+    cfg.segmentation.jump_hold_ms = 50.0;
+    let pitches = |audio: &[f32]| -> Vec<u8> {
+        let r = analyze(audio, SR, &model, &cfg).unwrap();
+        r.notes.iter().map(|n| n.pitch).collect()
+    };
+
+    let jump = synth(
+        1.0,
+        |t| midi_to_hz(if t < 0.5 { 69.0 } else { 72.0 }),
+        |t| ar(t, 1.0),
+    );
+    assert_eq!(pitches(&jump), vec![69, 72], "a 300c jump must split");
+
+    let drift = synth(1.0, |t| midi_to_hz(69.0 + 0.4 * (t / 1.0)), |t| ar(t, 1.0));
+    assert_eq!(
+        pitches(&drift).len(),
+        1,
+        "a slow 40c drift must stay one note"
+    );
+}

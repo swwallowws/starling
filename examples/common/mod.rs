@@ -16,6 +16,8 @@ pub const FLAGS_HELP: &str = "\
   --why                show which cue started each note
   --legato             preset for sung lyrics: fewer, smoother notes
   --hold-ms N          how long a new pitch must hold to start a note (default 90)
+  --jump-hold-ms N     hold needed for a big jump; small moves need --hold-ms (default 90)
+  --jump-cents N       interval counted as a big jump (default 300)
   --gap-ms N           silence that forces a new note (default 80)
   --split-cents N      pitch move that can start a note (default 70)
   --onset-delta N      loudness re-attack that starts a note, 0.6 = +60% (default 0.6)
@@ -58,6 +60,8 @@ pub fn parse_args() -> Result<Opts> {
             "--why" => o.why = true,
             "--legato" => {}
             "--hold-ms" => s.hold_time_ms = num("--hold-ms")?,
+            "--jump-hold-ms" => s.jump_hold_ms = num("--jump-hold-ms")?,
+            "--jump-cents" => s.jump_cents = num("--jump-cents")?,
             "--gap-ms" => s.voicing_gap_ms = num("--gap-ms")?,
             "--split-cents" => s.split_cents = num("--split-cents")?,
             "--onset-delta" => s.onset_rms_delta = num("--onset-delta")?,

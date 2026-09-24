@@ -12,6 +12,14 @@ pub struct SegmentationConfig {
     /// new note rather than vibrato/transient. Vibrato never settles; a real
     /// note does. (SPEC §5)
     pub hold_time_ms: f32,
+    /// Hold time (ms) for a big pitch jump of `jump_cents` or more. Between
+    /// `split_cents` and `jump_cents` the required hold slides linearly from
+    /// [`hold_time_ms`](Self::hold_time_ms) down to this, so clear melodic jumps
+    /// register fast while small moves (glides, scoops) must settle longer.
+    /// Equal to `hold_time_ms` means a fixed hold.
+    pub jump_hold_ms: f32,
+    /// Interval (cents) at and beyond which a move only needs `jump_hold_ms`.
+    pub jump_cents: f32,
     /// A forward window whose median differs from the current center by at least
     /// this many cents (and is itself stable) starts a new note.
     pub split_cents: f32,
@@ -37,6 +45,8 @@ impl Default for SegmentationConfig {
             min_voiced_run_ms: 60.0,
             voicing_gap_ms: 80.0,
             hold_time_ms: 90.0,
+            jump_hold_ms: 90.0,
+            jump_cents: 300.0,
             split_cents: 70.0,
             stability_cents: 35.0,
             onset_rms_delta: 0.6,
