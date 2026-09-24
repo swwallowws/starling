@@ -156,3 +156,49 @@ fn full_correction_flattens_each_notes_bend() {
         );
     }
 }
+
+#[test]
+fn the_exported_midi_has_exactly_the_notes_the_studio_shows() {
+    let Some(m) = model() else { return };
+    let s = Session::load("step", wav(&step(0.3)), &m).unwrap();
+    let settings = Settings {
+        hold_ms: 95.0,
+        jump_hold_ms: 175.0,
+        jump_cents: 260.0,
+        gap_ms: 285.0,
+        split_cents: 90.0,
+        onset_delta: Some(1.45),
+        tuning_name: Some("31-edo".into()),
+        tuning_scl: Some(
+            voxmpe::tunings::presets()
+                .into_iter()
+                .find(|p| p.id == "31-edo")
+                .unwrap()
+                .scl,
+        ),
+        smoothing: 0.5,
+        correction: 0.5,
+        ..Settings::default()
+    };
+    let shown: Vec<u8> = s
+        .render(&settings)
+        .unwrap()
+        .notes
+        .iter()
+        .map(|n| n.pitch)
+        .collect();
+    let mid = s.export_mid(&settings).unwrap();
+    let smf = Smf::parse(&mid).unwrap();
+    let exported: Vec<u8> = smf.tracks[0]
+        .iter()
+        .filter_map(|e| match e.kind {
+            TrackEventKind::Midi {
+                message: MidiMessage::NoteOn { key, .. },
+                ..
+            } => Some(key.as_int()),
+            _ => None,
+        })
+        .collect();
+    assert!(!shown.is_empty());
+    assert_eq!(exported, shown);
+}
