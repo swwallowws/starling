@@ -1,7 +1,7 @@
-//! Cents ↔ ratio ↔ frequency conversions — the shared music-math layer.
+//! Cents ↔ ratio ↔ frequency conversions: the shared music-math layer.
 //!
 //! A `.scl` gives INTERVALS only; an anchor (reference Hz) makes them concrete.
-//! Keep the anchor FIXED across every comparison — an anchor mismatch shows up as a
+//! Keep the anchor FIXED across every comparison: an anchor mismatch shows up as a
 //! constant ratio across all degrees (not a per-note error).
 
 /// Ratio -> cents, so ratio-based `.scl` entries share one code path with cents.

@@ -7,7 +7,7 @@ use crate::segment::{hz_to_semitones, Span};
 use crate::types::{CurvePoint, Frame, Note};
 
 /// Build a [`Note`] for `span` with quantized `pitch` (12-TET) and its
-/// `pitch_center` (fractional semitones — THE SEAM, preserved verbatim on the
+/// `pitch_center` (fractional semitones: THE SEAM, preserved verbatim on the
 /// [`Note`] so a microtonal consumer can requantize). `max_rms` is the global
 /// amplitude reference for normalizing dynamics across the whole performance.
 pub fn encode_note(

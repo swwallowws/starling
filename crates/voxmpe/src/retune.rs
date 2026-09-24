@@ -1,5 +1,5 @@
-//! Retune a `voxmidi-core` analysis to an arbitrary tuning — the piece that unites
-//! microtonal quantization WITH singmidi's expressive continuous bend.
+//! Retune a `voxmpe-core` analysis to an arbitrary tuning: the piece that unites
+//! microtonal quantization with the voice's expressive continuous bend.
 //!
 //! Each note's *center* is snapped to a scale degree (via [`Tuning`]), while the
 //! singer's vibrato/scoops around that center are preserved: the whole bend curve is
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn vibrato_is_preserved_across_retuning() {
         // Two samples differing by 0.1 semitone (vibrato) must still differ by 0.1
-        // after retuning — only the constant offset changes, not the wiggle.
+        // after retuning: only the constant offset changes, not the wiggle.
         let t = Tuning::new(&Scale::parse(SCL_JI).unwrap(), MIDDLE_C);
         let b = vec![
             CurvePoint {

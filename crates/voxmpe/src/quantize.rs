@@ -1,6 +1,6 @@
-//! Scale quantization — the microtonal side of THE SEAM.
+//! Scale quantization: the microtonal side of THE SEAM.
 //!
-//! `voxmidi-core` hands us each note's *fractional* MIDI pitch (`Note::pitch_center`,
+//! `voxmpe-core` hands us each note's *fractional* MIDI pitch (`Note::pitch_center`,
 //! semitones) and deliberately does NOT choose a note. Here we choose it against an
 //! arbitrary tuning: snap the fractional pitch to the nearest scale-degree frequency,
 //! then split that frequency into `(MIDI note, 14-bit bend)` via the shared primitive.
@@ -51,7 +51,7 @@ impl Tuning {
             }
         }
         // The next period's 1/1 (== `period` cents) is also a candidate for a target
-        // sitting just below the top of the period — otherwise we'd never snap up to it.
+        // sitting just below the top of the period: otherwise we'd never snap up to it.
         if (self.period - reduced).abs() < best_err {
             best = self.period;
         }

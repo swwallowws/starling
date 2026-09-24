@@ -1,7 +1,7 @@
-//! Tunable analysis parameters. Every segmentation threshold lives here — no
+//! Tunable analysis parameters. Every segmentation threshold lives here: no
 //! magic numbers buried in the algorithm (see SPEC §5).
 
-/// Note-segmentation thresholds. The defining knob is [`hold_time_ms`].
+/// Note-segmentation thresholds. The defining knob is [`hold_time_ms`](Self::hold_time_ms).
 #[derive(Debug, Clone)]
 pub struct SegmentationConfig {
     /// Shortest run (ms) that counts as a note; shorter voiced blips are dropped/merged.
@@ -63,11 +63,11 @@ pub struct ExpressionConfig {
     /// Drop a bend point if it differs from the last emitted one by less than
     /// this many semitones (perceptual thinning to avoid flooding the file).
     pub bend_thin_semitones: f32,
-    /// Likewise for the amplitude (CC11) curve, in normalized [0,1] units.
+    /// Likewise for the amplitude (CC11) curve, in normalized 0..1 units.
     pub amp_thin: f32,
     /// Velocity = this exponent applied to normalized attack amplitude (gamma).
     pub velocity_gamma: f32,
-    /// Floor for note-on velocity in [0,1] so quiet onsets still sound.
+    /// Floor for note-on velocity in 0..1 so quiet onsets still sound.
     pub velocity_floor: f32,
 }
 

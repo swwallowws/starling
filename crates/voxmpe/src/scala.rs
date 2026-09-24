@@ -1,7 +1,7 @@
 //! Scala `.scl` tuning import.
 //!
 //! A `.scl` defines INTERVALS, not absolute pitches. It becomes concrete only with
-//! an anchor (see [`crate::pitch::cents_to_freq`]). Cents entries (with a `.`) and
+//! an anchor (see [`voxmpe_core::interval::cents_to_freq`]). Cents entries (with a `.`) and
 //! ratio entries (`a/b` or a bare integer) collapse to one normalized cents path.
 //!
 //! Format recap: `!` lines are comments; first non-comment line is the description;
@@ -18,7 +18,7 @@ pub enum ScaleKind {
     EqualDivision,
 }
 
-/// How the kind was decided — surfaced so a misroute is visible, not silent.
+/// How the kind was decided: surfaced so a misroute is visible, not silent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KindSource {
     Declared,
@@ -69,7 +69,7 @@ impl Scale {
         for raw in text.lines() {
             let line = raw.trim();
             if line.starts_with('!') {
-                // Comment — but sniff a `! kind: mode|edo` override.
+                // Comment: but sniff a `! kind: mode|edo` override.
                 let c = line.trim_start_matches('!').trim().to_ascii_lowercase();
                 if let Some(v) = c.strip_prefix("kind:") {
                     declared_kind = match v.trim() {

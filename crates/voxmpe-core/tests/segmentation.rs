@@ -135,7 +135,7 @@ fn segmentation_cases() {
 
 /// THE SEAM: the fractional pitch center must survive on `Note::pitch_center`
 /// (not just the rounded 12-TET `pitch`). A tone tuned ~30 cents sharp of A4
-/// must round to 69 yet expose a center around 69.3 — proving the fraction is
+/// must round to 69 yet expose a center around 69.3: proving the fraction is
 /// not discarded, so a microtonal consumer could requantize it.
 #[test]
 fn fractional_pitch_center_is_preserved() {

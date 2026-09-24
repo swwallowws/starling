@@ -1,4 +1,4 @@
-//! Microtonal chord generation — the resolved "centerpiece" model.
+//! Microtonal chord generation: the resolved "centerpiece" model.
 //!
 //! Routing (see MICROTONAL_SPEC.md "Chord semantics"):
 //! - A **mode** carries harmony in its degree layout -> stack degrees `i, i+2, i+4`
@@ -8,7 +8,7 @@
 //!
 //! Either way, the result is scored by BEAT RATE (coincident-partial wobble). If the
 //! best achievable triad beats harder than the guard threshold, we degrade to the
-//! least-beating dyad and flag it — "no stable triad here" is a number, not a shrug.
+//! least-beating dyad and flag it: "no stable triad here" is a number, not a shrug.
 
 use crate::scala::{KindSource, Scale, ScaleKind};
 use voxmpe_core::interval::{cents_to_freq, ratio_to_cents};
@@ -16,7 +16,7 @@ use voxmpe_core::interval::{cents_to_freq, ratio_to_cents};
 /// "No stable triad" guard, in CENTS of deviation from the tuning-native ratio
 /// target. Register-independent (unlike beat Hz), so it keeps 12-TET's ~14c-off
 /// third (a real triad that merely beats) while rejecting octave ratios forced
-/// onto Bohlen–Pierce (~53c off). Only applied on the ratio-snap path — a mode's
+/// onto Bohlen–Pierce (~53c off). Only applied on the ratio-snap path: a mode's
 /// own degrees define its triad and are trusted as-is.
 pub const NO_TRIAD_MAX_CENTS: f64 = 35.0;
 
@@ -115,7 +115,7 @@ pub struct Chord {
 ///
 /// Routes on the scale's classification, scores the result by beat rate, and degrades
 /// to the least-beating dyad (flagging [`Verdict::DegradedToDyad`]) when no consonant
-/// triad is achievable — e.g. octave ratios forced onto Bohlen–Pierce.
+/// triad is achievable: e.g. octave ratios forced onto Bohlen–Pierce.
 pub fn generate_major_triad(
     scale: &Scale,
     root_idx: usize,
@@ -172,7 +172,7 @@ pub fn generate_major_triad(
         ScaleKind::EqualDivision => Method::RatioSnap,
     };
 
-    // A mode's own degrees define its triad — trust them (a deliberately neutral
+    // A mode's own degrees define its triad: trust them (a deliberately neutral
     // third is still that mode's third). On the ratio-snap path we DID aim at a
     // ratio, so we can judge the miss: a triad only if BOTH upper tones land within
     // the cents guard. Otherwise degrade to the root plus the least-off dyad.

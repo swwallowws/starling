@@ -4,8 +4,8 @@
 //! non-MPE instruments.
 //!
 //! The 14-bit bend encoding is NOT duplicated here: it is folded onto
-//! [`crate::mpe::bend_from_offset`] (singmidi's old local `bend_value` ≡ that
-//! function), so the whole workspace shares one semitone-offset -> bend code path.
+//! [`crate::mpe::bend_from_offset`], so the whole workspace shares one
+//! semitone-offset -> bend code path.
 
 use anyhow::Result;
 use midly::{

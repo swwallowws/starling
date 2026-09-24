@@ -31,7 +31,7 @@ fn one_note() -> Analysis {
 
 /// (channel, controller, value) for every CC, plus the channel of the first note-on.
 fn read_back(mode: OutputMode, name: &str) -> (Vec<(u8, u8, u8)>, u8) {
-    let path = std::env::temp_dir().join(format!("voxmidi_{name}_{}.mid", std::process::id()));
+    let path = std::env::temp_dir().join(format!("voxmpe_{name}_{}.mid", std::process::id()));
     let path_str = path.to_str().unwrap();
     write_smf(&one_note(), mode, path_str).unwrap();
     let bytes = std::fs::read(&path).unwrap();

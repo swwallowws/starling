@@ -1,27 +1,26 @@
-//! Shared voice-to-MPE-MIDI core.
+//! voxmpe-core: the voice-to-MPE-MIDI engine.
 //!
 //! Tuning-agnostic primitives + the offline monophonic singing-voice -> expressive
-//! MIDI analysis pipeline, reused across the Playground's voice→MIDI tools
-//! (`singmidi`, `microtonal-aud2midi`). "Correct" for the primitive layer is a
-//! NUMBER — every function is verified numerically, no ear required.
+//! MIDI analysis pipeline, used by the `voxmpe` app. "Correct" for the primitive layer is a
+//! NUMBER: every function is verified numerically, no ear required.
 //!
 //! Layers:
-//! - [`interval`] — cents ↔ ratio ↔ frequency math.
-//! - [`mpe`] — the freq → (MIDI note, 14-bit pitch bend) primitive and encoder.
-//! - [`pitch`] — CREPE pitch tracking (tract-onnx).
-//! - [`features`] — per-frame RMS + spectral centroid.
-//! - [`segment`] — note segmentation from the pitch contour.
-//! - [`expression`] — per-note bend/amplitude curves + velocity.
-//! - [`smf`] — MPE Standard MIDI File serializer.
-//! - [`config`] / [`types`] / [`resample`] — parameters, data types, resampling.
+//! - [`interval`]: cents ↔ ratio ↔ frequency math.
+//! - [`mpe`]: the freq → (MIDI note, 14-bit pitch bend) primitive and encoder.
+//! - [`pitch`]: CREPE pitch tracking (tract-onnx).
+//! - [`features`]: per-frame RMS + spectral centroid.
+//! - [`segment`]: note segmentation from the pitch contour.
+//! - [`expression`]: per-note bend/amplitude curves + velocity.
+//! - [`smf`]: MPE Standard MIDI File serializer.
+//! - [`config`] / [`types`] / [`resample`]: parameters, data types, resampling.
 //!
-//! THE SEAM — note SELECTION is intentionally NOT baked into the engine. Turning a
-//! fractional pitch into a scale note is where consumers diverge (`singmidi` rounds
-//! to 12-TET; `microtonal-aud2midi` quantizes to a scale degree). So [`segment::span_pitch`]
+//! THE SEAM: note SELECTION is intentionally NOT baked into the engine. Turning a
+//! fractional pitch into a scale note is where consumers diverge (a 12-TET consumer
+//! rounds; `voxmpe` quantizes to a Scala scale degree). So [`segment::span_pitch`]
 //! returns the RAW **fractional** center (f64 semitones) and [`types::Note`] carries
 //! it verbatim as [`types::Note::pitch_center`]; the 12-TET convenience note lives in
 //! [`types::Note::pitch`] via [`segment::round_to_12tet`]. Downstream consumers read
-//! `pitch_center` and quantize to their own tuning — the fraction is never discarded.
+//! `pitch_center` and quantize to their own tuning: the fraction is never discarded.
 
 pub mod config;
 pub mod expression;

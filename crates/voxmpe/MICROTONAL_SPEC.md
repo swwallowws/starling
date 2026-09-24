@@ -1,3 +1,5 @@
+> Historical design record, written when this app was microtonal-voxmidi and the engine was voxmidi-core. They are now `voxmpe` and `voxmpe-core` in one workspace.
+
 # Microtonal Voice-to-MIDI — Build Handoff
 
 Context and decisions from planning session. Intended as a starting brief for building with Claude Code.

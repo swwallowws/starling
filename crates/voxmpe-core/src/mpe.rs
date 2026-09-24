@@ -1,10 +1,10 @@
 //! The core primitive: frequency -> (MIDI note, 14-bit pitch bend), and the bend
 //! encoder underneath it.
 //!
-//! Reconciles the two siblings' overlapping code into ONE API:
-//! - [`bend_from_offset`] is the low-level encoder (singmidi's `bend_value`): a
+//! One API for both uses:
+//! - [`bend_from_offset`] is the low-level encoder: a
 //!   semitone offset within ±range -> 14-bit bend. Use when the note is already chosen.
-//! - [`freq_to_note_and_bend`] is the full split (microtonal-aud2midi's primitive):
+//! - [`freq_to_note_and_bend`] is the full split:
 //!   frequency -> nearest MIDI note + the bend carrying the remainder.
 //!
 //! Everything hinges on the fractional MIDI note number: compute it first, never lose

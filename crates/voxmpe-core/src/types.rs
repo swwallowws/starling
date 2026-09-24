@@ -35,13 +35,13 @@ pub struct CurvePoint {
 pub struct Note {
     /// Quantized MIDI pitch (0..127), the note's center, ROUNDED to 12-TET.
     /// Convenience for the 12-TET path (`smf`); microtonal consumers ignore it
-    /// and quantize [`pitch_center`] to their own scale instead.
+    /// and quantize [`pitch_center`](Self::pitch_center) to their own scale instead.
     pub pitch: u8,
     /// THE SEAM (see crate docs & SPEC §5.4). The note's pitch center as a
-    /// *fractional* MIDI note number in semitones — NOT rounded to any scale.
+    /// *fractional* MIDI note number in semitones: NOT rounded to any scale.
     /// This is the value the engine must never discard: a downstream consumer
-    /// quantizes it to a non-12-TET scale (`microtonal-aud2midi`), while the
-    /// 12-TET path just reads [`pitch`] = `round_to_12tet(pitch_center)`.
+    /// quantizes it to a non-12-TET scale (the `voxmpe` app), while the
+    /// 12-TET path just reads [`pitch`](Self::pitch) = `round_to_12tet(pitch_center)`.
     pub pitch_center: f64,
     /// Note start time (seconds).
     pub start: f32,
@@ -55,7 +55,7 @@ pub struct Note {
     /// Per-note amplitude in [0, 1] over time -> CC11 (expression).
     pub amplitude: Vec<CurvePoint>,
     /// Reserved MPE dimension: channel pressure in [0, 1] (unused for now, but
-    /// kept so the per-note expression model generalizes — SPEC §6).
+    /// kept so the per-note expression model generalizes: SPEC §6).
     pub pressure: Vec<CurvePoint>,
     /// Reserved MPE dimension: timbre/slide -> CC74 in [0, 1] (unused for now).
     pub slide: Vec<CurvePoint>,

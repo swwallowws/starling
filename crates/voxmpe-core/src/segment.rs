@@ -1,4 +1,4 @@
-//! Note segmentation — the core problem (SPEC §5).
+//! Note segmentation: the core problem (SPEC §5).
 //!
 //! CREPE gives a pitch *contour*, not note boundaries. We derive boundaries
 //! from three cues and resolve them into segments:
@@ -54,7 +54,7 @@ fn median(vals: &[f32]) -> f32 {
     }
 }
 
-/// Median of the values within `tol` of the overall median — i.e. the dominant
+/// Median of the values within `tol` of the overall median: i.e. the dominant
 /// cluster, ignoring a leading scoop / transient outliers.
 fn robust_center(vals: &[f32], tol: f32) -> f32 {
     if vals.is_empty() {
@@ -213,7 +213,7 @@ fn segment_run(
     let mut start = a;
     let mut cause = Cause::Voicing;
     // amplitude-onset state: a re-articulation is a real dip below the note's
-    // peak followed by recovery — distinct from the initial attack ramp.
+    // peak followed by recovery: distinct from the initial attack ramp.
     let mut peak = rms[a];
     let mut armed = false;
     let mut trough = rms[a];
@@ -306,7 +306,7 @@ fn segment_run(
 }
 
 /// **THE SEAM** (SPEC §5.4). Fractional pitch center for a span, in semitones
-/// (MIDI note-number space) — the median over the span's *stable* portion
+/// (MIDI note-number space): the median over the span's *stable* portion
 /// (frames near the overall median), so a leading scoop doesn't drag the
 /// estimate. Returns the RAW fractional value and does NOT round to any scale:
 /// keeping the fraction is what lets a downstream consumer quantize to a
