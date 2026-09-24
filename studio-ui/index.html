@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-category="transcribe">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>voxmpe studio</title>
+  </head>
+  <body>
+    <header class="bar">
+      <strong>voxmpe</strong>
+      <button id="record">Record</button>
+      <input id="take-name" aria-label="Name for the next recording" />
+      <span id="rec-status"></span>
+      <select id="takes" aria-label="Open a take"></select>
+      <label>Tuning <select id="tuning"><option value="">12-TET</option><option value="load">Load .scl...</option></select></label>
+      <input id="scl-file" type="file" accept=".scl" hidden />
+      <label>Anchor <input id="anchor" type="number" step="0.01" /> Hz</label>
+      <span id="tuning-error" class="error" role="alert"></span>
+      <span id="note-count"></span>
+    </header>
+    <p id="message" class="message" role="status"></p>
+    <main>
+      <canvas id="roll"></canvas>
+      <aside id="controls"></aside>
+    </main>
+    <footer class="bar">
+      <button id="play">Play (Space)</button>
+      <span role="radiogroup" aria-label="Listen to">
+        <label><input type="radio" name="listen" value="voice" /> Voice</label>
+        <label><input type="radio" name="listen" value="midi" checked /> MIDI</label>
+        <label><input type="radio" name="listen" value="both" /> Both</label>
+      </span>
+      <button id="save">Save .mid</button>
+      <span id="drag" class="drag" draggable="false">Drag into Live</span>
+      <button id="reveal" hidden>Reveal in Finder</button>
+      <span id="saved-path"></span>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
