@@ -177,10 +177,68 @@ fn answers_over_real_http() {
         server::serve(&srv, &mut st);
     });
     let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
-    s.write_all(b"GET /api/takes HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")
-        .unwrap();
+    s.write_all(
+        format!("GET /api/takes HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n")
+            .as_bytes(),
+    )
+    .unwrap();
     let mut out = String::new();
     s.read_to_string(&mut out).unwrap();
     assert!(out.starts_with("HTTP/1.1 200"), "{out}");
     assert!(out.ends_with("[]"), "{out}");
+}
+
+#[test]
+fn rejects_a_foreign_host_header() {
+    let (srv, port) = server::bind(0).unwrap_or_else(|_| server::bind(47010).unwrap());
+    let dir = temp_dir("http_forbidden");
+    std::thread::spawn(move || {
+        let mut st = State::new(None, dir);
+        server::serve(&srv, &mut st);
+    });
+    let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    s.write_all(b"GET /api/takes HTTP/1.1\r\nHost: evil.example\r\nConnection: close\r\n\r\n")
+        .unwrap();
+    let mut out = String::new();
+    s.read_to_string(&mut out).unwrap();
+    assert!(out.starts_with("HTTP/1.1 403"), "{out}");
+}
+
+#[test]
+fn allowed_checks_host_and_post_origin() {
+    let port = 4000;
+    // Good hosts, case-insensitive, no Origin.
+    assert!(server::allowed("GET", Some("127.0.0.1:4000"), None, port));
+    assert!(server::allowed("GET", Some("LOCALHOST:4000"), None, port));
+    assert!(server::allowed("POST", Some("127.0.0.1:4000"), None, port));
+    // Wrong host, wrong port, missing host.
+    assert!(!server::allowed(
+        "GET",
+        Some("evil.example:4000"),
+        None,
+        port
+    ));
+    assert!(!server::allowed("GET", Some("127.0.0.1:4001"), None, port));
+    assert!(!server::allowed("GET", None, None, port));
+    // POST with a foreign Origin is rejected even with a good Host.
+    assert!(!server::allowed(
+        "POST",
+        Some("127.0.0.1:4000"),
+        Some("http://evil.example"),
+        port
+    ));
+    // GET with a foreign Origin but a good Host is allowed (Origin only gates POST).
+    assert!(server::allowed(
+        "GET",
+        Some("127.0.0.1:4000"),
+        Some("http://evil.example"),
+        port
+    ));
+    // POST with our own Origin, either host form, is allowed.
+    assert!(server::allowed(
+        "POST",
+        Some("localhost:4000"),
+        Some("http://localhost:4000"),
+        port
+    ));
 }

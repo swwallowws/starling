@@ -1,5 +1,7 @@
 //! The studio's local server: a pure `handle()` plus a thin tiny_http loop.
 
+use std::fs::OpenOptions;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Result};
@@ -130,14 +132,25 @@ fn sanitize_stem(raw: &str) -> String {
     }
 }
 
-fn unique_wav(dir: &Path, stem: &str) -> PathBuf {
+/// Create a new, never-before-seen `<stem>[-N].wav` in `dir` and write `body` into it.
+/// Uses `create_new` so two concurrent uploads can never clobber each other or an
+/// existing take: a name collision retries the next `-N` instead of overwriting.
+fn save_new_wav(dir: &Path, stem: &str, body: &[u8]) -> std::io::Result<PathBuf> {
     let mut p = dir.join(format!("{stem}.wav"));
     let mut n = 2;
-    while p.exists() {
-        p = dir.join(format!("{stem}-{n}.wav"));
-        n += 1;
+    loop {
+        match OpenOptions::new().write(true).create_new(true).open(&p) {
+            Ok(mut f) => {
+                f.write_all(body)?;
+                return Ok(p);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                p = dir.join(format!("{stem}-{n}.wav"));
+                n += 1;
+            }
+            Err(e) => return Err(e),
+        }
     }
-    p
 }
 
 /// Decode `%XX` escapes and `+` in a query value (byte-wise, so any input is safe).
@@ -209,10 +222,10 @@ pub fn handle(state: &mut State, method: &str, url: &str, body: &[u8]) -> Reply 
                 if let Err(e) = std::fs::create_dir_all(&state.takes_dir) {
                     return err(500, e);
                 }
-                let path = unique_wav(&state.takes_dir, &sanitize_stem(&requested));
-                if let Err(e) = std::fs::write(&path, body) {
-                    return err(500, e);
-                }
+                let path = match save_new_wav(&state.takes_dir, &sanitize_stem(&requested), body) {
+                    Ok(p) => p,
+                    Err(e) => return err(500, e),
+                };
                 (
                     path.file_name().unwrap().to_string_lossy().into_owned(),
                     body.to_vec(),
@@ -326,23 +339,76 @@ pub fn bind(start_port: u16) -> Result<(tiny_http::Server, u16)> {
     )
 }
 
-/// Answer requests one at a time until the process exits.
-pub fn serve(server: &tiny_http::Server, state: &mut State) {
-    for mut req in server.incoming_requests() {
-        let mut body = Vec::new();
-        let _ = req.as_reader().read_to_end(&mut body);
-        let method = req.method().as_str().to_owned();
-        let url = req.url().to_owned();
-        let r = handle(state, &method, &url, &body);
-        let mut resp = tiny_http::Response::from_data(r.body).with_status_code(r.status);
-        if let Ok(h) = tiny_http::Header::from_bytes("Content-Type", r.content_type) {
-            resp.add_header(h);
-        }
-        for (k, v) in r.headers {
-            if let Ok(h) = tiny_http::Header::from_bytes(k, v.as_bytes()) {
-                resp.add_header(h);
+/// Reject bodies larger than this before they ever reach `handle`.
+const MAX_BODY: u64 = 256 * 1024 * 1024;
+
+/// Does this request's `Host` (and, for POST, `Origin`) header match this server's
+/// own origin? Blocks cross-origin POSTs from another page (CSRF: uploading into
+/// takes/, triggering /api/reveal, overwriting an export) and DNS-rebinding reads
+/// of responses such as /api/audio, without touching any other request handling.
+pub fn allowed(method: &str, host: Option<&str>, origin: Option<&str>, port: u16) -> bool {
+    let is_own = |h: &str| {
+        let h = h.to_ascii_lowercase();
+        h == format!("127.0.0.1:{port}") || h == format!("localhost:{port}")
+    };
+    let Some(host) = host else { return false };
+    if !is_own(host) {
+        return false;
+    }
+    if method.eq_ignore_ascii_case("POST") {
+        if let Some(origin) = origin {
+            let origin = origin.to_ascii_lowercase();
+            let ok = origin == format!("http://127.0.0.1:{port}")
+                || origin == format!("http://localhost:{port}");
+            if !ok {
+                return false;
             }
         }
-        let _ = req.respond(resp);
+    }
+    true
+}
+
+fn header_value<'a>(headers: &'a [tiny_http::Header], name: &'static str) -> Option<&'a str> {
+    headers
+        .iter()
+        .find(|h| h.field.equiv(name))
+        .map(|h| h.value.as_str())
+}
+
+fn respond(req: tiny_http::Request, r: Reply) {
+    let mut resp = tiny_http::Response::from_data(r.body).with_status_code(r.status);
+    if let Ok(h) = tiny_http::Header::from_bytes("Content-Type", r.content_type) {
+        resp.add_header(h);
+    }
+    for (k, v) in r.headers {
+        if let Ok(h) = tiny_http::Header::from_bytes(k, v.as_bytes()) {
+            resp.add_header(h);
+        }
+    }
+    let _ = req.respond(resp);
+}
+
+/// Answer requests one at a time until the process exits.
+pub fn serve(server: &tiny_http::Server, state: &mut State) {
+    let port = server.server_addr().to_ip().map(|a| a.port()).unwrap_or(0);
+    for mut req in server.incoming_requests() {
+        let method = req.method().as_str().to_owned();
+        let host = header_value(req.headers(), "Host").map(str::to_owned);
+        let origin = header_value(req.headers(), "Origin").map(str::to_owned);
+        if !allowed(&method, host.as_deref(), origin.as_deref(), port) {
+            respond(req, err(403, "forbidden: wrong host or origin"));
+            continue;
+        }
+
+        let mut body = Vec::new();
+        let read = req.as_reader().take(MAX_BODY + 1).read_to_end(&mut body);
+        if read.is_err() || body.len() as u64 > MAX_BODY {
+            respond(req, err(413, "request body too large"));
+            continue;
+        }
+
+        let url = req.url().to_owned();
+        let r = handle(state, &method, &url, &body);
+        respond(req, r);
     }
 }
