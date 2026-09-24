@@ -8,6 +8,7 @@ use voxmpe_core::types::Analysis;
 use voxmpe_core::{track, transcribe, AnalysisConfig, CrepeModel, Frames};
 
 use crate::audio::{decode_wav, peak};
+use crate::expression::shape;
 use crate::retune::retune;
 use crate::settings::Settings;
 
@@ -146,9 +147,8 @@ impl Session {
 
     fn analysis(&self, s: &Settings) -> Result<Analysis> {
         let tuning = s.tuning().map_err(|e| anyhow!("tuning: {e}"))?;
-        Ok(retune(
-            &transcribe(&self.frames, &s.analysis_config()),
-            &tuning,
-        ))
+        let mut a = retune(&transcribe(&self.frames, &s.analysis_config()), &tuning);
+        shape(&mut a, &tuning, &s.shape());
+        Ok(a)
     }
 }

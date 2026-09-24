@@ -3,7 +3,8 @@ import { createSettingsStore } from "./settings-store";
 import { createTuning, type TuningView } from "./tuning";
 import { DEFAULT_SETTINGS } from "./types";
 
-const good = { name: "31edo.scl", scl: "good" };
+const makam = { name: "53-edo", scl: "makam" };
+const file = { name: "31edo.scl", scl: "good" };
 const bad = { name: "broken.scl", scl: "bad" };
 
 function setup() {
@@ -15,34 +16,41 @@ function setup() {
 }
 
 describe("tuning picker state", () => {
-  it("a scale becomes the loaded choice only after it renders", () => {
+  it("a built-in tuning becomes active only after it renders", () => {
     const { store, t, last } = setup();
-    t.loadFile(good);
-    expect(store.get().tuning_scl).toBe("good");
-    expect(last()?.loaded ?? null).toBeNull();
+    t.choose(makam);
+    expect(store.get()).toMatchObject({ tuning_name: "53-edo", tuning_scl: "makam" });
+    expect(last()?.active ?? null).toBeNull();
     t.renderOk(store.get());
-    expect(last()).toEqual({ choice: "loaded", loaded: good, error: null });
+    expect(last()).toEqual({ active: makam, custom: null, error: null });
+  });
+
+  it("a loaded file becomes active and is remembered as the custom scale", () => {
+    const { store, t, last } = setup();
+    t.loadFile(file);
+    t.renderOk(store.get());
+    expect(last()).toEqual({ active: file, custom: file, error: null });
   });
 
   it("a bad file shows its error, reverts, and the error survives the retry render", () => {
     const { store, t, last } = setup();
-    t.loadFile(good);
+    t.choose(makam);
     t.renderOk(store.get());
     t.loadFile(bad);
     t.renderError("tuning: bad note count");
-    expect(store.get().tuning_scl).toBe("good");
-    expect(last()).toEqual({ choice: "loaded", loaded: good, error: "tuning: bad note count" });
-    t.renderOk(store.get()); // the fallback render succeeds
+    expect(store.get().tuning_scl).toBe("makam");
+    expect(last()).toEqual({ active: makam, custom: null, error: "tuning: bad note count" });
+    t.renderOk(store.get());
     expect(last().error).toBe("tuning: bad note count");
   });
 
-  it("switching to 12-TET and back restores the loaded scale", () => {
+  it("switching away and back restores the loaded file", () => {
     const { store, t } = setup();
-    t.loadFile(good);
+    t.loadFile(file);
     t.renderOk(store.get());
-    t.choose12();
+    t.choose(null);
     expect(store.get().tuning_scl).toBeNull();
-    t.chooseLoaded();
+    t.chooseCustom();
     expect(store.get()).toMatchObject({ tuning_name: "31edo.scl", tuning_scl: "good" });
   });
 
@@ -51,12 +59,12 @@ describe("tuning picker state", () => {
     t.loadFile(bad);
     t.renderError("tuning: bad");
     expect(last().error).toBe("tuning: bad");
-    t.choose12();
+    t.choose(null);
     expect(last().error).toBeNull();
     expect(store.get().tuning_scl).toBeNull();
   });
 
-  it("ignores render results unrelated to a pending file", () => {
+  it("ignores render results unrelated to a pending choice", () => {
     const onView = vi.fn();
     const store = createSettingsStore(DEFAULT_SETTINGS);
     const t = createTuning(store, onView);

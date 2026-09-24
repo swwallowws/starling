@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, currentTake, render } from "./api";
+import { ApiError, currentTake, listTunings, render } from "./api";
 import { DEFAULT_SETTINGS } from "./types";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -37,5 +37,11 @@ describe("api", () => {
     const body = { take_id: 3, info: { name: "a.wav" } };
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body))));
     expect(await currentTake()).toEqual(body);
+  });
+  it("lists the built-in tunings", async () => {
+    const f = vi.fn(async () => new Response(JSON.stringify([{ id: "53-edo", name: "Turkish makam", scl: "x" }])));
+    vi.stubGlobal("fetch", f);
+    expect((await listTunings())[0].id).toBe("53-edo");
+    expect((f.mock.calls[0] as unknown as [string])[0]).toBe("/api/tunings");
   });
 });

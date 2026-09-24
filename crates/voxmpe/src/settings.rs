@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use voxmpe_core::smf::OutputMode;
 use voxmpe_core::{AnalysisConfig, SegmentationConfig};
 
+use crate::expression::Shape;
 use crate::quantize::Tuning;
 use crate::scala::Scale;
 
@@ -50,6 +51,12 @@ pub struct Settings {
     pub anchor_hz: f64,
     /// `Some(range)`: single-channel MIDI with that bend range. `None`: MPE.
     pub single_channel: Option<u8>,
+    /// 0..1: smooth the pitch curve inside each note.
+    pub smoothing: f32,
+    /// 0..1: pull slow pitch movement (scoops, drift) onto the scale note.
+    pub correction: f32,
+    /// 0..1.5: vibrato depth, 1 = as sung.
+    pub vibrato: f32,
 }
 
 impl Default for Settings {
@@ -66,6 +73,9 @@ impl Default for Settings {
             tuning_scl: None,
             anchor_hz: MIDDLE_C_HZ,
             single_channel: None,
+            smoothing: 0.0,
+            correction: 0.0,
+            vibrato: 1.0,
         }
     }
 }
@@ -98,6 +108,14 @@ impl Settings {
         Ok(Tuning::new(&scale, self.anchor_hz))
     }
 
+    pub fn shape(&self) -> Shape {
+        Shape {
+            smoothing: self.smoothing,
+            correction: self.correction,
+            vibrato: self.vibrato,
+        }
+    }
+
     pub fn output_mode(&self) -> OutputMode {
         match self.single_channel {
             Some(bend_range) => OutputMode::SingleChannel { bend_range },
@@ -119,6 +137,9 @@ impl Settings {
         num("jump-cents", self.jump_cents, d.jump_cents);
         num("gap-ms", self.gap_ms, d.gap_ms);
         num("split-cents", self.split_cents, d.split_cents);
+        num("smoothing", self.smoothing, d.smoothing);
+        num("correction", self.correction, d.correction);
+        num("vibrato", self.vibrato, d.vibrato);
         match self.onset_delta {
             None => f.push("--no-onset".into()),
             Some(v) if Some(v) != d.onset_delta => f.push(format!("--onset-delta {v}")),

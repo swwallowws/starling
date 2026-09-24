@@ -18,7 +18,7 @@ pub struct Frame {
 }
 
 /// A single point on a per-note expression curve.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CurvePoint {
     /// Time in seconds, absolute (song time).
     pub time: f32,

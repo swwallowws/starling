@@ -115,3 +115,13 @@ Not in v1: loop regions, editing notes by hand, undo, chords.
 ## Effect on the Game Plan
 
 Steps 3 (voxmidi-core) and 4 (microtonal-voxmidi) become one project, voxmpe, in one repo. Publishing still produces a crates.io library (`voxmpe-core`) plus the app (`voxmpe`).
+
+## Addendum (2026-09-24, after the first build)
+
+Added at the user's request so a take does not have to be sung perfectly, and to make the microtonal side usable without finding `.scl` files:
+
+- **Expression sliders** (Settings `smoothing` 0..1, `correction` 0..1, `vibrato` 0..1.5; CLI `--smoothing`, `--correction`, `--vibrato`): reshape each note's pitch curve after retuning, before preview and export. Smoothing low-passes the curve; correction removes slow movement (scoops, drift) toward the scale note; vibrato scales the fast movement. A "center the note" switch was considered and dropped: retuning already centers each note on its scale pitch.
+- **Built-in tunings** (`GET /api/tunings`; `--tuning <id>`): 53-EDO and Arel-Ezgi-Uzdilek 24 (Turkish makam), 24-EDO, 5-limit just, Pythagorean, quarter-comma meantone, 19-EDO, 31-EDO, Bohlen-Pierce. Loaded `.scl` files still work.
+- **Anchor as note names**: C3 to B4 with one-decimal frequencies, plus a custom Hz field.
+- **Roll legend** and marks drawn above each note's start, so they are not confused with the pitch line.
+- **Fixes from the final review**: one owner for settings, tuning picker state, `GET /api/current` for a take opened from the command line, "Open WAV", Space handling, replay from the start, a sample-rate guard.

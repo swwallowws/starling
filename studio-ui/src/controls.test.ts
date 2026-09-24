@@ -38,4 +38,23 @@ describe("controls", () => {
     store.patch({ hold_ms: 200 });
     expect(root.querySelector<HTMLInputElement>('input[type="range"]')!.value).toBe("200");
   });
+  it("expression sliders patch the store as fractions", () => {
+    const { root, store } = setup();
+    const smoothing = root.querySelector<HTMLInputElement>('input[name="smoothing"]')!;
+    smoothing.value = "40";
+    smoothing.dispatchEvent(new Event("input"));
+    expect(store.get().smoothing).toBeCloseTo(0.4);
+    const vibrato = root.querySelector<HTMLInputElement>('input[name="vibrato"]')!;
+    expect(vibrato.value).toBe("100");
+  });
+
+  it("Reset also resets expression, Legato leaves it", () => {
+    const { root, store } = setup();
+    store.patch({ correction: 0.7 });
+    const [legato, reset] = [...root.querySelectorAll("button")];
+    legato.click();
+    expect(store.get().correction).toBeCloseTo(0.7);
+    reset.click();
+    expect(store.get().correction).toBe(0);
+  });
 });

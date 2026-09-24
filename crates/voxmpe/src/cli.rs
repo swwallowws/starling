@@ -32,12 +32,21 @@ pub struct SettingsArgs {
     /// Start from the preset for sung lyrics (explicit flags still override)
     #[arg(long)]
     pub legato: bool,
-    /// Scala .scl tuning file (omit for 12-TET)
+    /// Scala .scl file or a built-in tuning name such as 53-edo or 31-edo (omit for 12-TET)
     #[arg(long)]
     pub tuning: Option<PathBuf>,
     /// Frequency (Hz) of the scale's 1/1 (default middle C, 261.63)
     #[arg(long)]
     pub anchor_hz: Option<f64>,
+    /// Smooth the pitch curve inside each note, 0 to 1 (default 0)
+    #[arg(long)]
+    pub smoothing: Option<f32>,
+    /// Pull scoops and drift onto the scale note, 0 to 1 (default 0)
+    #[arg(long)]
+    pub correction: Option<f32>,
+    /// Vibrato depth, 0 to 1.5, 1 = as sung (default 1)
+    #[arg(long)]
+    pub vibrato: Option<f32>,
     /// Single-channel MIDI with this bend range (semitones) instead of MPE
     #[arg(long)]
     pub single_channel: Option<u8>,
@@ -71,10 +80,26 @@ impl SettingsArgs {
             s.onset_delta = Some(v);
         }
         if let Some(p) = &self.tuning {
-            let text = std::fs::read_to_string(p)
-                .with_context(|| format!("reading tuning {}", p.display()))?;
+            let name = p.display().to_string();
+            let preset = crate::tunings::presets().into_iter().find(|t| t.id == name);
+            let text = match preset {
+                // A built-in name wins unless a file with that name exists.
+                Some(t) if !p.exists() => t.scl,
+                _ => std::fs::read_to_string(p).with_context(|| {
+                    format!("reading tuning {name} (not a file or a built-in tuning name)")
+                })?,
+            };
             s.tuning_scl = Some(text);
-            s.tuning_name = Some(p.display().to_string());
+            s.tuning_name = Some(name);
+        }
+        if let Some(v) = self.smoothing {
+            s.smoothing = v;
+        }
+        if let Some(v) = self.correction {
+            s.correction = v;
+        }
+        if let Some(v) = self.vibrato {
+            s.vibrato = v;
         }
         if let Some(v) = self.anchor_hz {
             s.anchor_hz = v;
@@ -160,6 +185,12 @@ mod tests {
                 ..Settings::default()
             },
             Settings {
+                smoothing: 0.4,
+                correction: 0.5,
+                vibrato: 0.8,
+                ..Settings::default()
+            },
+            Settings {
                 onset_delta: Some(1.2),
                 anchor_hz: 440.0,
                 single_channel: Some(2),
@@ -186,6 +217,21 @@ mod tests {
         }
         std::fs::remove_file(scl).ok();
         std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn tuning_accepts_a_built_in_name() {
+        let s = parse("--tuning 31-edo");
+        assert_eq!(s.tuning_name.as_deref(), Some("31-edo"));
+        assert!(s.tuning_scl.as_deref().unwrap().contains("31"));
+        assert_eq!(parse(&s.to_flags()), s);
+        let args = ["t", "--tuning", "no-such-scale"];
+        let err = T::try_parse_from(args)
+            .unwrap()
+            .a
+            .to_settings()
+            .unwrap_err();
+        assert!(format!("{err:#}").contains("no-such-scale"), "{err:#}");
     }
 
     #[test]

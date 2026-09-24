@@ -282,6 +282,7 @@ pub fn handle(state: &mut State, method: &str, url: &str, body: &[u8]) -> Reply 
                 serde_json::json!({ "path": full.display().to_string(), "file_name": file_name }),
             )
         }
+        ("GET", "/api/tunings") => ok_json(crate::tunings::presets()),
         ("GET", "/api/current") => match &state.session {
             Some(s) => ok_json(serde_json::json!({ "take_id": state.take_id, "info": s.info() })),
             None => reply(204, "application/json", vec![]),

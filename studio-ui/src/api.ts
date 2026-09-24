@@ -1,4 +1,4 @@
-import type { ExportResp, LoadResp, Rendered, Settings } from "./types";
+import type { ExportResp, LoadResp, Preset, Rendered, Settings } from "./types";
 
 export const AUDIO_URL = "/api/audio";
 export const EXPORTED_URL = "/api/exported.mid";
@@ -47,3 +47,6 @@ export async function currentTake(): Promise<LoadResp | null> {
   if (!res.ok) throw new ApiError(res.status, res.statusText || "request failed");
   return (await res.json()) as LoadResp;
 }
+
+/** The built-in tunings. */
+export const listTunings = () => call<Preset[]>("/api/tunings");

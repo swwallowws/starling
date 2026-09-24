@@ -104,6 +104,18 @@ fn uploads_are_sanitized_unique_and_saved_before_analysis() {
 }
 
 #[test]
+fn lists_the_built_in_tunings() {
+    let mut st = State::new(None, temp_dir("tun"));
+    let r = handle(&mut st, "GET", "/api/tunings", b"");
+    assert_eq!(r.status, 200);
+    let list = json(&r);
+    let first = &list.as_array().unwrap()[0];
+    assert_eq!(first["id"], "53-edo");
+    assert!(first["scl"].as_str().unwrap().contains("53"));
+    assert!(first["name"].as_str().unwrap().contains("Turkish"));
+}
+
+#[test]
 fn current_is_empty_before_any_take() {
     let mut st = State::new(None, temp_dir("cur"));
     let r = handle(&mut st, "GET", "/api/current", b"");

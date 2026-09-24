@@ -11,6 +11,7 @@
 pub mod audio;
 pub mod chord;
 pub mod cli;
+pub mod expression;
 pub mod model;
 pub mod quantize;
 pub mod retune;
@@ -18,3 +19,4 @@ pub mod scala;
 pub mod server;
 pub mod session;
 pub mod settings;
+pub mod tunings;

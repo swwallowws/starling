@@ -11,6 +11,12 @@ export interface Settings {
   anchor_hz: number;
   /** null = MPE */
   single_channel: number | null;
+  /** 0..1: smooth the pitch curve inside each note */
+  smoothing: number;
+  /** 0..1: pull scoops and drift onto the scale note */
+  correction: number;
+  /** 0..1.5: vibrato depth, 1 = as sung */
+  vibrato: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -24,6 +30,9 @@ export const DEFAULT_SETTINGS: Settings = {
   tuning_scl: null,
   anchor_hz: 261.625565,
   single_channel: null,
+  smoothing: 0,
+  correction: 0,
+  vibrato: 1,
 };
 
 export const LEGATO: Partial<Settings> = { hold_ms: 180, gap_ms: 150, onset_delta: null };
@@ -63,4 +72,11 @@ export interface LoadResp {
 export interface ExportResp {
   path: string;
   file_name: string;
+}
+
+/** A built-in tuning from GET /api/tunings. */
+export interface Preset {
+  id: string;
+  name: string;
+  scl: string;
 }

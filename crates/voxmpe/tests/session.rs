@@ -127,3 +127,32 @@ fn info_has_one_contour_point_per_frame() {
     assert!((info.duration_s - 1.0).abs() < 0.01);
     assert!(info.loudness.iter().all(|&l| (0.0..=1.0).contains(&l)));
 }
+
+#[test]
+fn full_correction_flattens_each_notes_bend() {
+    let Some(m) = model() else { return };
+    let s = Session::load("step", wav(&step(0.3)), &m).unwrap();
+    let flat = s
+        .render(&Settings {
+            correction: 1.0,
+            vibrato: 0.0,
+            ..Settings::default()
+        })
+        .unwrap();
+    for n in &flat.notes {
+        let vals: Vec<f32> = n.bend.iter().map(|p| p[1]).collect();
+        if vals.len() < 4 {
+            continue;
+        }
+        let mid = &vals[vals.len() / 4..3 * vals.len() / 4];
+        let (lo, hi) = mid
+            .iter()
+            .fold((f32::MAX, f32::MIN), |(a, b), &v| (a.min(v), b.max(v)));
+        assert!(
+            hi - lo < 0.05,
+            "note {} still moves {:.3} semitones",
+            n.pitch,
+            hi - lo
+        );
+    }
+}

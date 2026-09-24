@@ -2,12 +2,13 @@ import "./styles.css";
 import * as api from "./api";
 import { drawRoll } from "./roll";
 import { xToTime, type View } from "./coords";
-import type { LoadResp, RNote, TakeInfo } from "./types";
+import type { LoadResp, Preset, RNote, TakeInfo } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
 import { buildControls } from "./controls";
 import { spaceAction } from "./keys";
 import { createSettingsStore } from "./settings-store";
 import { createTuning, type TuningView } from "./tuning";
+import { anchorNotes, formatHz, matchAnchor } from "./anchor";
 import { startPoint } from "./synth";
 import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
@@ -186,43 +187,75 @@ document.addEventListener("mousedown", (e) => {
   if ((e.target as Element).closest("button")) e.preventDefault();
 });
 
-// Tuning picker and anchor.
+// Tuning picker: 12-TET, the built-in tunings, the last loaded file, Load .scl...
 const tuningSel = $<HTMLSelectElement>("tuning");
 const sclFile = $<HTMLInputElement>("scl-file");
-const anchor = $<HTMLInputElement>("anchor");
-anchor.value = String(store.get().anchor_hz);
+let presets: Preset[] = [];
+let tuningView: TuningView = { active: null, custom: null, error: null };
 
-let tuningView: TuningView = { choice: "12tet", loaded: null, error: null };
 function showTuning(v: TuningView) {
   tuningView = v;
-  let opt = tuningSel.querySelector<HTMLOptionElement>('option[value="loaded"]');
-  if (v.loaded) {
-    if (!opt) {
-      opt = Object.assign(document.createElement("option"), { value: "loaded" });
-      tuningSel.insertBefore(opt, tuningSel.lastElementChild);
-    }
-    opt.textContent = v.loaded.name;
-  }
-  tuningSel.value = v.choice === "loaded" ? "loaded" : "";
+  tuningSel.textContent = "";
+  tuningSel.add(new Option("12-TET", ""));
+  for (const p of presets) tuningSel.add(new Option(p.name, `preset:${p.id}`));
+  if (v.custom) tuningSel.add(new Option(v.custom.name, "custom"));
+  tuningSel.add(new Option("Load .scl...", "load"));
+  const a = v.active;
+  const isPreset = a && presets.some((p) => p.id === a.name && p.scl === a.scl);
+  tuningSel.value = !a ? "" : isPreset ? `preset:${a.name}` : "custom";
   $("tuning-error").textContent = v.error ? `${v.error} (kept the previous tuning)` : "";
 }
 const tuning = createTuning(store, showTuning);
+showTuning(tuningView);
+api
+  .listTunings()
+  .then((list) => {
+    presets = list;
+    showTuning(tuningView);
+  })
+  .catch((e) => say(e.message));
 
 tuningSel.addEventListener("change", () => {
-  if (tuningSel.value === "load") {
+  const v = tuningSel.value;
+  if (v === "load") {
     showTuning(tuningView); // keep showing the active tuning until a file renders
     sclFile.click();
-  } else if (tuningSel.value === "loaded") tuning.chooseLoaded();
-  else tuning.choose12();
+  } else if (v === "custom") tuning.chooseCustom();
+  else if (v.startsWith("preset:")) {
+    const p = presets.find((x) => `preset:${x.id}` === v);
+    if (p) tuning.choose({ name: p.id, scl: p.scl });
+  } else tuning.choose(null);
 });
 sclFile.addEventListener("change", async () => {
   const f = sclFile.files?.[0];
   sclFile.value = "";
   if (f) tuning.loadFile({ name: f.name, scl: await f.text() });
 });
-anchor.addEventListener("change", () => {
-  const hz = Number(anchor.value);
-  if (hz > 0) store.patch({ anchor_hz: hz });
+
+// Anchor: the scale's first note, as a note name with its frequency, or a custom Hz.
+const anchorSel = $<HTMLSelectElement>("anchor");
+const anchorCustom = $<HTMLInputElement>("anchor-custom");
+for (const n of anchorNotes()) anchorSel.add(new Option(n.label, String(n.hz)));
+anchorSel.add(new Option("Custom...", "custom"));
+function showAnchor(hz: number) {
+  const m = matchAnchor(hz);
+  anchorSel.value = m ? String(m.hz) : "custom";
+  anchorCustom.hidden = m !== null;
+  anchorCustom.value = formatHz(hz);
+}
+showAnchor(store.get().anchor_hz);
+anchorSel.addEventListener("change", () => {
+  if (anchorSel.value === "custom") {
+    anchorCustom.hidden = false;
+    anchorCustom.focus();
+  } else store.patch({ anchor_hz: Number(anchorSel.value) });
+});
+anchorCustom.addEventListener("change", () => {
+  const hz = Math.round(Number(anchorCustom.value) * 10) / 10;
+  if (hz > 0) {
+    store.patch({ anchor_hz: hz });
+    showAnchor(hz);
+  }
 });
 
 export async function opened(r: LoadResp) {

@@ -24,6 +24,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12p
 input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: var(--acc); border: 0; border-radius: 0; }
 input[type="range"]:disabled { opacity: 0.4; }
 .error { color: var(--ink); font-weight: 600; }
+#controls h3 { font-size: 13px; font-weight: 600; margin: calc(var(--space) * 2) 0 var(--space); color: var(--ink-mut); }
+.legend { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; margin-left: auto; color: var(--ink-mut); font-size: 12px; }
+.legend .mk, .legend .ln { display: inline-block; }
+.legend .mk.bar { width: 2px; height: 8px; background: var(--ink); }
+.legend .mk.slash { width: 1px; height: 9px; background: var(--ink); transform: rotate(30deg); }
+.legend .ln { width: 16px; border-top: 1px solid var(--ink); }
+.legend .ln.mut { border-top-color: var(--ink-mut); opacity: 0.5; }
 .message { margin: 0; padding: 0 calc(var(--space) * 2); color: var(--ink-mut); min-height: 1.4em; }
 .drag { padding: calc(var(--space) / 2) var(--space); border: 1px dashed var(--line); color: var(--ink-mut); }
 .drag[draggable="true"] { color: var(--ink); border-color: var(--acc); cursor: grab; }

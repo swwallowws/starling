@@ -75,13 +75,15 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
       g.strokeStyle = c.ink;
       g.strokeRect(x0 + 0.5, y + 0.5, width - 1, noteH - 1);
     }
-    // What started the note, by mark shape: nothing after a gap.
+    // What started the note, drawn just above its start so it never reads as
+    // part of the pitch line: a slash for a pitch change, a bar for a re-attack,
+    // nothing after a gap.
     g.strokeStyle = c.ink;
     if (n.cause === "pitch") {
-      g.beginPath(); g.moveTo(x0, y + noteH + 2); g.lineTo(x0 + 4, y - 2); g.stroke();
+      g.beginPath(); g.moveTo(x0 + 0.5, y - 1); g.lineTo(x0 + 4.5, y - 7); g.stroke();
     } else if (n.cause === "reattack") {
       g.fillStyle = c.ink;
-      g.fillRect(x0, y - 2, 2, noteH + 4);
+      g.fillRect(x0, y - 7, 2, 6);
     }
     // Bend curve: 1px ink through the note.
     if (n.bend.length > 1) {

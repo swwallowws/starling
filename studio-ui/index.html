@@ -12,10 +12,11 @@
       <input id="take-name" aria-label="Name for the next recording" />
       <span id="rec-status"></span>
       <select id="takes" aria-label="Open a take"></select>
-      <label>Tuning <select id="tuning"><option value="">12-TET</option><option value="load">Load .scl...</option></select></label>
+      <label>Tuning <select id="tuning"></select></label>
       <input id="scl-file" type="file" accept=".scl" hidden />
       <input id="wav-file" type="file" accept=".wav,audio/wav" hidden />
-      <label>Anchor <input id="anchor" type="number" step="0.01" /> Hz</label>
+      <label>Anchor <select id="anchor"></select></label>
+      <input id="anchor-custom" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
       <span id="tuning-error" class="error" role="alert"></span>
       <span id="note-count"></span>
     </header>
@@ -35,6 +36,13 @@
       <span id="drag" class="drag" draggable="false">Drag into Live</span>
       <button id="reveal" hidden>Reveal in Finder</button>
       <span id="saved-path"></span>
+      <span class="legend" aria-label="Piano roll key">
+        <span class="mk slash"></span> pitch change
+        <span class="mk bar"></span> re-attack
+        <span>no mark: after a gap</span>
+        <span class="ln"></span> MIDI pitch
+        <span class="ln mut"></span> sung pitch
+      </span>
     </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
