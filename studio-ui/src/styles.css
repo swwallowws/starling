@@ -34,4 +34,6 @@ input[type="range"]:disabled { opacity: 0.4; }
 .message { margin: 0; padding: 0 calc(var(--space) * 2); color: var(--ink-mut); min-height: 1.4em; }
 .drag { padding: calc(var(--space) / 2) var(--space); border: 1px dashed var(--line); color: var(--ink-mut); }
 .drag[draggable="true"] { color: var(--ink); border-color: var(--acc); cursor: grab; }
+#drags { display: inline-flex; gap: calc(var(--space) / 2); flex-wrap: wrap; }
+.formats { display: inline-flex; gap: var(--space); }
 @media (max-width: 700px) { main { grid-template-columns: 1fr; } #controls { border-left: 0; } }

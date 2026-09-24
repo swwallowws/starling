@@ -19,7 +19,8 @@ pub struct State {
     pub takes_dir: PathBuf,
     pub session: Option<Session>,
     pub take_id: u64,
-    pub last_export: Option<PathBuf>,
+    /// The latest saved file per format ("mid", "als").
+    pub last_export: Vec<(&'static str, PathBuf)>,
 }
 
 pub struct Reply {
@@ -34,7 +35,20 @@ struct WithSettings {
     take_id: u64,
     #[serde(default)]
     settings: Settings,
+    /// Which files Save writes: "mid" and/or "als". Defaults to just the .mid.
+    #[serde(default = "default_formats")]
+    formats: Vec<String>,
 }
+
+fn default_formats() -> Vec<String> {
+    vec!["mid".into()]
+}
+
+/// The export formats, as (format, file extension, MIME type).
+const FORMATS: [(&str, &str, &str); 2] = [
+    ("mid", "mid", "audio/midi"),
+    ("als", "als", "application/octet-stream"),
+];
 
 impl State {
     pub fn new(model: Option<CrepeModel>, takes_dir: PathBuf) -> State {
@@ -43,7 +57,7 @@ impl State {
             takes_dir,
             session: None,
             take_id: 0,
-            last_export: None,
+            last_export: Vec::new(),
         }
     }
 
@@ -263,24 +277,43 @@ pub fn handle(state: &mut State, method: &str, url: &str, body: &[u8]) -> Reply 
                     Err(e) => err(400, e),
                 };
             }
-            let bytes = match session.export_mid(&req.settings) {
-                Ok(b) => b,
-                Err(e) => return err(400, e),
-            };
+            let wanted: Vec<_> = FORMATS
+                .iter()
+                .filter(|(f, _, _)| req.formats.iter().any(|w| w == f))
+                .collect();
+            if wanted.is_empty() || wanted.len() != req.formats.len() {
+                return err(400, "formats must be one or both of \"mid\" and \"als\"");
+            }
             let stem = session.name.trim_end_matches(".wav").to_string();
             if let Err(e) = std::fs::create_dir_all(&state.takes_dir) {
                 return err(500, e);
             }
-            let out = state.takes_dir.join(format!("{stem}_studio.mid"));
-            if let Err(e) = std::fs::write(&out, bytes) {
-                return err(500, e);
+            let mut files = Vec::new();
+            let mut saved = Vec::new();
+            for &&(format, ext, _) in &wanted {
+                let bytes = match format {
+                    "mid" => session.export_mid(&req.settings),
+                    _ => session.export_als(&req.settings),
+                };
+                let bytes = match bytes {
+                    Ok(b) => b,
+                    Err(e) => return err(400, e),
+                };
+                let out = state.takes_dir.join(format!("{stem}_studio.{ext}"));
+                if let Err(e) = std::fs::write(&out, bytes) {
+                    return err(500, e);
+                }
+                let file_name = out.file_name().unwrap().to_string_lossy().into_owned();
+                let full = std::fs::canonicalize(&out).unwrap_or(out.clone());
+                files.push(serde_json::json!({
+                    "format": format,
+                    "path": full.display().to_string(),
+                    "file_name": file_name,
+                }));
+                saved.push((format, full));
             }
-            let file_name = out.file_name().unwrap().to_string_lossy().into_owned();
-            let full = std::fs::canonicalize(&out).unwrap_or(out.clone());
-            state.last_export = Some(full.clone());
-            ok_json(
-                serde_json::json!({ "path": full.display().to_string(), "file_name": file_name }),
-            )
+            state.last_export = saved;
+            ok_json(serde_json::json!({ "files": files }))
         }
         ("GET", "/api/tunings") => ok_json(crate::tunings::presets()),
         ("GET", "/api/current") => match &state.session {
@@ -291,24 +324,30 @@ pub fn handle(state: &mut State, method: &str, url: &str, body: &[u8]) -> Reply 
             Some(s) => reply(200, "audio/wav", s.wav.clone()),
             None => err(409, "no take is open"),
         },
-        ("GET", "/api/exported.mid") => match state
-            .last_export
-            .as_ref()
-            .and_then(|p| std::fs::read(p).ok().map(|b| (p, b)))
-        {
-            Some((p, b)) => {
-                let mut r = reply(200, "audio/midi", b);
-                let name = p.file_name().unwrap().to_string_lossy().into_owned();
-                r.headers.push((
-                    "Content-Disposition",
-                    format!("attachment; filename=\"{name}\""),
-                ));
-                r
+        ("GET", p) if p.starts_with("/api/exported.") => {
+            let ext = &p["/api/exported.".len()..];
+            let found = FORMATS
+                .iter()
+                .find(|(_, e, _)| *e == ext)
+                .and_then(|(f, _, mime)| {
+                    let (_, path) = state.last_export.iter().find(|(g, _)| g == f)?;
+                    std::fs::read(path).ok().map(|b| (path, b, *mime))
+                });
+            match found {
+                Some((path, b, mime)) => {
+                    let mut r = reply(200, mime, b);
+                    let name = path.file_name().unwrap().to_string_lossy().into_owned();
+                    r.headers.push((
+                        "Content-Disposition",
+                        format!("attachment; filename=\"{name}\""),
+                    ));
+                    r
+                }
+                None => err(404, "nothing exported yet"),
             }
-            None => err(404, "nothing exported yet"),
-        },
-        ("POST", "/api/reveal") => match &state.last_export {
-            Some(p) => {
+        }
+        ("POST", "/api/reveal") => match state.last_export.first() {
+            Some((_, p)) => {
                 let _ = std::process::Command::new("open").arg("-R").arg(p).spawn();
                 ok_json(serde_json::json!({}))
             }

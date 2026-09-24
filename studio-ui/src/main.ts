@@ -15,7 +15,8 @@ import { throttleLatest } from "./throttle";
 import { Player } from "./player";
 import { AUDIO_URL, currentTake } from "./api";
 import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
-import { downloadUrlData, settingsKey } from "./export";
+import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
+import type { SavedFile } from "./types";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -145,32 +146,72 @@ async function toggleRecord() {
 
 $("record").addEventListener("click", toggleRecord);
 
-let saved: { key: string; fileName: string; takeId: number } | null = null;
-const drag = $("drag");
+let saved: { key: string; files: SavedFile[]; takeId: number } | null = null;
+const drags = $("drags");
 
+// Which files Save writes: remembered in this browser, .mid alone by default.
+let formats: Format[] = loadFormats(localStorageOrNull());
+const formatBoxes = [...document.querySelectorAll<HTMLInputElement>('input[name="format"]')];
+function syncFormats() {
+  for (const box of formatBoxes) box.checked = formats.includes(box.value as Format);
+}
+for (const box of formatBoxes) {
+  box.addEventListener("change", () => {
+    formats = nextFormats(formats, box.value as Format, box.checked);
+    saveFormats(localStorageOrNull(), formats);
+    syncFormats();
+  });
+}
+syncFormats();
+
+function localStorageOrNull(): Storage {
+  try {
+    return window.localStorage;
+  } catch {
+    return { getItem: () => null, setItem: () => {} } as unknown as Storage;
+  }
+}
+
+/** One drag handle per saved file, live only while it matches the current take and settings. */
 function updateDrag() {
-  const fresh = saved && saved.takeId === app.takeId && saved.key === settingsKey(store.get());
-  drag.setAttribute("draggable", fresh ? "true" : "false");
-  drag.textContent = fresh ? `Drag ${saved!.fileName} into Live` : saved ? "Save again to drag the latest" : "Save first to drag";
+  const fresh = !!saved && saved.takeId === app.takeId && saved.key === settingsKey(store.get());
+  drags.replaceChildren();
+  if (!saved) {
+    drags.append(handle("Save first to drag", false));
+    return;
+  }
+  if (!fresh) {
+    drags.append(handle("Save again to drag the latest", false));
+    return;
+  }
+  for (const f of saved.files) {
+    const h = handle(`Drag ${f.file_name}`, true);
+    h.title = f.format === "als" ? "Drop into Live: the clip keeps each note's pitch curve" : "Drop into any DAW";
+    h.addEventListener("dragstart", (e) => {
+      e.dataTransfer?.setData("DownloadURL", downloadUrlData(f.format, f.file_name, location.origin));
+    });
+    drags.append(h);
+  }
+}
+
+function handle(text: string, live: boolean) {
+  const h = Object.assign(document.createElement("span"), { className: "drag", textContent: text });
+  h.setAttribute("draggable", live ? "true" : "false");
+  return h;
 }
 
 $("save").addEventListener("click", async () => {
   if (!app.takeId) return;
   try {
     const settings = store.get();
-    const r = await api.exportMid(app.takeId, settings);
-    saved = { key: settingsKey(settings), fileName: r.file_name, takeId: app.takeId };
-    $("saved-path").textContent = r.path;
+    const r = await api.exportFiles(app.takeId, settings, formats);
+    saved = { key: settingsKey(settings), files: r.files, takeId: app.takeId };
+    $("saved-path").textContent = r.files.map((f) => f.path).join("  ");
     $("reveal").hidden = false;
   } catch (e) {
     say((e as Error).message);
   }
   updateDrag();
-});
-
-drag.addEventListener("dragstart", (e) => {
-  if (!saved) return;
-  e.dataTransfer?.setData("DownloadURL", downloadUrlData(saved.fileName, location.origin));
 });
 
 $("reveal").addEventListener("click", () => void api.reveal());

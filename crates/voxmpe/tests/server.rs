@@ -178,6 +178,32 @@ fn full_flow_with_the_model() {
         served.body,
         std::fs::read(dir.join("tone_studio.mid")).unwrap()
     );
+    assert!(!dir.join("tone_studio.als").exists(), ".als is opt-in");
+    assert_eq!(json(&r)["files"][0]["file_name"], "tone_studio.mid");
+
+    let als = serde_json::json!({ "take_id": id, "settings": {}, "formats": ["als"] }).to_string();
+    let r = handle(&mut st, "POST", "/api/export", als.as_bytes());
+    assert_eq!(r.status, 200);
+    assert_eq!(json(&r)["files"].as_array().unwrap().len(), 1);
+    assert_eq!(json(&r)["files"][0]["format"], "als");
+    let served = handle(&mut st, "GET", "/api/exported.als", b"");
+    assert_eq!(served.status, 200);
+    assert_eq!(
+        served.body,
+        std::fs::read(dir.join("tone_studio.als")).unwrap()
+    );
+    assert_eq!(&served.body[..2], &[0x1f, 0x8b]);
+
+    let none = serde_json::json!({ "take_id": id, "settings": {}, "formats": [] }).to_string();
+    assert_eq!(
+        handle(&mut st, "POST", "/api/export", none.as_bytes()).status,
+        400
+    );
+    let odd = serde_json::json!({ "take_id": id, "settings": {}, "formats": ["wav"] }).to_string();
+    assert_eq!(
+        handle(&mut st, "POST", "/api/export", odd.as_bytes()).status,
+        400
+    );
 
     assert_eq!(
         handle(&mut st, "GET", "/api/audio", b"").content_type,

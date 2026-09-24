@@ -145,6 +145,13 @@ impl Session {
         smf_bytes(&self.analysis(s)?, s.output_mode())
     }
 
+    /// An Ableton Live set whose clip carries each note's bend as Live's own
+    /// per-note pitch expression.
+    pub fn export_als(&self, s: &Settings) -> Result<Vec<u8>> {
+        let name = self.name.trim_end_matches(".wav");
+        crate::als::als_bytes(&self.analysis(s)?, name, self.duration_s)
+    }
+
     fn analysis(&self, s: &Settings) -> Result<Analysis> {
         let tuning = s.tuning().map_err(|e| anyhow!("tuning: {e}"))?;
         let mut a = retune(&transcribe(&self.frames, &s.analysis_config()), &tuning);

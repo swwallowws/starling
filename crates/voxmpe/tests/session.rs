@@ -202,3 +202,26 @@ fn the_exported_midi_has_exactly_the_notes_the_studio_shows() {
     assert!(!shown.is_empty());
     assert_eq!(exported, shown);
 }
+
+/// The .als carries the same notes as the studio, each with its bend as a
+/// per-note pitch curve (once in the Session clip, once in the Arrangement).
+#[test]
+fn the_live_set_has_the_notes_and_curves_the_studio_shows() {
+    let Some(m) = model() else { return };
+    let s = Session::load("step", wav(&step(0.3)), &m).unwrap();
+    let settings = Settings::default();
+    let shown = s.render(&settings).unwrap().notes;
+    let mut xml = String::new();
+    std::io::Read::read_to_string(
+        &mut flate2::read::GzDecoder::new(&s.export_als(&settings).unwrap()[..]),
+        &mut xml,
+    )
+    .unwrap();
+    assert!(!shown.is_empty());
+    assert_eq!(xml.matches("<MidiNoteEvent ").count(), 2 * shown.len());
+    let curved = shown.iter().filter(|n| !n.bend.is_empty()).count();
+    assert!(curved > 0);
+    assert_eq!(xml.matches("<PerNoteEventList ").count(), 2 * curved);
+    let points: usize = shown.iter().map(|n| n.bend.len()).sum();
+    assert_eq!(xml.matches("<PerNoteEvent ").count(), 2 * points);
+}

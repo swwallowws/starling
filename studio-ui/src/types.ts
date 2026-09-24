@@ -69,9 +69,14 @@ export interface LoadResp {
   info: TakeInfo;
 }
 
-export interface ExportResp {
+export interface SavedFile {
+  format: "mid" | "als";
   path: string;
   file_name: string;
+}
+
+export interface ExportResp {
+  files: SavedFile[];
 }
 
 /** A built-in tuning from GET /api/tunings. */

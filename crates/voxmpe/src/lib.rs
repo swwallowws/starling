@@ -8,6 +8,7 @@
 //!
 //! See MICROTONAL_SPEC.md for the design rationale and reference numbers.
 
+pub mod als;
 pub mod audio;
 pub mod chord;
 pub mod cli;

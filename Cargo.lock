@@ -500,6 +500,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "expressive-liveset"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1945,6 +1952,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "expressive-liveset",
+ "flate2",
  "hound",
  "include_dir",
  "midly",

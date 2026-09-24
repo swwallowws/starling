@@ -32,8 +32,12 @@
         <label><input type="radio" name="listen" value="midi" checked /> MIDI</label>
         <label><input type="radio" name="listen" value="both" /> Both</label>
       </span>
-      <button id="save">Save .mid</button>
-      <span id="drag" class="drag" draggable="false">Drag into Live</span>
+      <span class="formats" aria-label="Save as">
+        <label><input type="checkbox" name="format" value="mid" /> .mid</label>
+        <label><input type="checkbox" name="format" value="als" /> .als (Live)</label>
+      </span>
+      <button id="save">Save</button>
+      <span id="drags"></span>
       <button id="reveal" hidden>Reveal in Finder</button>
       <span id="saved-path"></span>
       <span class="legend" aria-label="Piano roll key">

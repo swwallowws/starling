@@ -1,7 +1,7 @@
+import type { Format } from "./export";
 import type { ExportResp, LoadResp, Preset, Rendered, Settings } from "./types";
 
 export const AUDIO_URL = "/api/audio";
-export const EXPORTED_URL = "/api/exported.mid";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -36,8 +36,8 @@ export const uploadTake = (name: string, wav: ArrayBuffer) =>
   call<LoadResp>(`/api/load?name=${encodeURIComponent(name)}`, { method: "POST", body: wav });
 export const render = (takeId: number, settings: Settings) =>
   call<Rendered>("/api/render", post({ take_id: takeId, settings }));
-export const exportMid = (takeId: number, settings: Settings) =>
-  call<ExportResp>("/api/export", post({ take_id: takeId, settings }));
+export const exportFiles = (takeId: number, settings: Settings, formats: Format[]) =>
+  call<ExportResp>("/api/export", post({ take_id: takeId, settings, formats }));
 export const reveal = () => call<void>("/api/reveal", { method: "POST" });
 
 /** The take the studio already has open (e.g. `voxmpe studio take.wav`), or null. */
