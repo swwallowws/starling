@@ -1,0 +1,27 @@
+[package]
+name = "microtonal-voxmidi"
+version = "0.1.0"
+edition = "2021"
+description = "Unified voice-to-MIDI app: microtonal Scala tuning + chords + expressive MPE, on the voxmidi engine. (Successor to the retired singmidi.)"
+
+# The microtonal WEDGE (Scala tuning + scale quantization + chords) as a lib, plus a
+# CLI that drives the shared voxmidi-core engine: WAV in -> analyze -> retune -> .mid.
+[lib]
+name = "microtonal"
+path = "src/lib.rs"
+
+[[bin]]
+name = "microtonal-voxmidi"
+path = "src/main.rs"
+
+[dependencies]
+voxmidi-core = { path = "../voxmidi-core" }
+# CLI app layer (mic/cpal deliberately omitted — WAV-file in only, no ALSA dep).
+hound = "3.5"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+
+# Optimize deps (notably tract, pulled via voxmidi-core) in dev/test so CREPE
+# inference isn't unusably slow; our own crate stays debug. Mirrors voxmidi-core.
+[profile.dev.package."*"]
+opt-level = 3
