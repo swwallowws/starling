@@ -21,7 +21,7 @@
 - Takes and exports live in `takes/` (gitignored). Nothing is written to the Desktop.
 - `analyze()` output must stay identical to before the split.
 - Server binds to `127.0.0.1` only.
-- Tokens: copy `~/Playground/tabridge/shared/tokens.css` into `studio-ui/src/tokens.css`; all colors come from its variables so a later re-skin is one file.
+- Design system (`~/Playground/design`, v0.1.0): sync it with `~/Playground/design/sync.sh studio-ui` into `studio-ui/vendor/design/` (committed). All colours, type and spacing come from its tokens; `<html data-category="transcribe">` selects voxmpe's accent. Follow `studio-ui/vendor/design/roll.md` for the piano roll: key bands, notes as tints of the accent (strength 35% + 65% * velocity), the sounding note full accent with a 1px ink outline, causes as note-start ticks (none after a gap, slanted tick for a pitch change, upright bar for a re-attack). No other colours; errors are shown in ink, never red.
 
 ## Review Focus
 
@@ -1853,7 +1853,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 8: studio-ui scaffold and API client
 
 **Files:**
-- Create: `studio-ui/package.json`, `studio-ui/tsconfig.json`, `studio-ui/vite.config.ts`, `studio-ui/index.html`, `studio-ui/src/tokens.css` (copy), `studio-ui/src/styles.css`, `studio-ui/src/types.ts`, `studio-ui/src/api.ts`, `studio-ui/src/main.ts`, `studio-ui/.gitignore`
+- Create: `studio-ui/package.json`, `studio-ui/tsconfig.json`, `studio-ui/vite.config.ts`, `studio-ui/index.html`, `studio-ui/vendor/design/*` (synced), `studio-ui/src/styles.css`, `studio-ui/src/types.ts`, `studio-ui/src/api.ts`, `studio-ui/src/main.ts`, `studio-ui/.gitignore`
 - Test: `studio-ui/src/api.test.ts`
 
 **Interfaces:**
@@ -1896,7 +1896,8 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true
   },
   "include": ["src"]
 }
@@ -1910,13 +1911,23 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: { outDir: "../crates/voxmpe/ui-dist", emptyOutDir: true },
   // `npm run dev` with `voxmpe studio --no-open` running on 7878.
-  server: { proxy: { "/api": "http://127.0.0.1:7878" } },
+  // The studio server rejects foreign Host/Origin headers, so the dev proxy
+  // presents itself as the studio's own origin.
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:7878",
+        changeOrigin: true,
+        headers: { origin: "http://127.0.0.1:7878" },
+      },
+    },
+  },
 });
 ```
 
 `studio-ui/.gitignore`: `node_modules/`
 
-Copy tokens: `cp ~/Playground/tabridge/shared/tokens.css studio-ui/src/tokens.css` and prepend the line `/* Copied from tabridge/shared/tokens.css. The studio's only source of colour and type: re-skin here. */`.
+Sync the design system: `~/Playground/design/sync.sh studio-ui` (writes `studio-ui/vendor/design/`, commit it). Its `tokens.css` references fonts relatively (`fonts/...`); Vite bundles them when the CSS is imported.
 
 - [ ] **Step 2: `types.ts`**
 
@@ -2068,7 +2079,7 @@ export const reveal = () => call<void>("/api/reveal", { method: "POST" });
 
 ```html
 <!doctype html>
-<html lang="en">
+<html lang="en" data-category="transcribe">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -2112,24 +2123,35 @@ export const reveal = () => call<void>("/api/reveal", { method: "POST" });
 `studio-ui/src/styles.css`:
 
 ```css
-@import "./tokens.css";
+@import "../vendor/design/tokens.css";
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); display: grid; grid-template-rows: auto auto 1fr auto; height: 100vh; }
-.bar { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; padding: 8px 16px; background: var(--ground-2); border-bottom: 1px solid var(--line); }
-footer.bar { border-top: 1px solid var(--line); border-bottom: 0; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; display: grid; grid-template-rows: auto auto 1fr auto; height: 100vh; }
+.bar { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; padding: var(--space) calc(var(--space) * 2); background: var(--ground-2); border-bottom: var(--hairline); }
+footer.bar { border-top: var(--hairline); border-bottom: 0; }
 main { display: grid; grid-template-columns: 1fr 300px; min-height: 0; }
 #roll { width: 100%; height: 100%; display: block; }
-#controls { padding: 12px 16px; border-left: 1px solid var(--line); overflow: auto; font-size: 13px; }
-#controls label { display: grid; grid-template-columns: 1fr auto; gap: 4px; margin-bottom: 10px; }
-#controls input[type="range"] { grid-column: 1 / -1; width: 100%; }
+#controls { padding: calc(var(--space) * 2); border-left: var(--hairline); overflow: auto; font-size: 13px; }
+#controls label { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2); margin-bottom: calc(var(--space) * 2); }
+#controls label > span { color: var(--acc); }
 #controls code { font-family: var(--font-mono); font-size: 12px; word-break: break-all; }
-button { font: inherit; padding: 4px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--ground-3); color: var(--ink); cursor: pointer; }
+button, select, input[type="text"], input[type="number"] { font: inherit; color: var(--ink); background: var(--ground-2); border: var(--hairline); border-radius: var(--radius); padding: calc(var(--space) / 2) var(--space); }
+button { cursor: pointer; }
+button:hover { background: var(--band); }
 button:disabled { opacity: 0.5; cursor: default; }
-.error { color: var(--bend); }
-.message { margin: 0; padding: 0 16px; color: var(--ink-mut); min-height: 1.4em; }
-.drag { padding: 4px 10px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-mut); }
-.drag[draggable="true"] { color: var(--ink); cursor: grab; }
+:focus-visible { outline: 1px solid var(--acc); outline-offset: 1px; }
+input[type="checkbox"] { accent-color: var(--acc); }
+/* Range sliders as in the design system's reference page: thin track, accent fill (--fill set from JS), square thumb. */
+input[type="range"] { grid-column: 1 / -1; width: 100%; appearance: none; -webkit-appearance: none; height: 12px; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(to right, var(--acc) var(--fill, 0%), var(--line) var(--fill, 0%)); }
+input[type="range"]::-moz-range-track { height: 2px; background: linear-gradient(to right, var(--acc) var(--fill, 0%), var(--line) var(--fill, 0%)); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; background: var(--acc); border: 0; border-radius: 0; }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: var(--acc); border: 0; border-radius: 0; }
+input[type="range"]:disabled { opacity: 0.4; }
+.error { color: var(--ink); font-weight: 600; }
+.message { margin: 0; padding: 0 calc(var(--space) * 2); color: var(--ink-mut); min-height: 1.4em; }
+.drag { padding: calc(var(--space) / 2) var(--space); border: 1px dashed var(--line); color: var(--ink-mut); }
+.drag[draggable="true"] { color: var(--ink); border-color: var(--acc); cursor: grab; }
 @media (max-width: 700px) { main { grid-template-columns: 1fr; } #controls { border-left: 0; } }
 ```
 
@@ -2186,7 +2208,7 @@ Expected: tests pass, build writes `crates/voxmpe/ui-dist/`, curl prints `1`.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add studio-ui && git commit -m "studio-ui: Vite scaffold, typed API client, take picker
+git add studio-ui && git commit -m "studio-ui: Vite scaffold on the design system, typed API client, take picker
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -2196,13 +2218,13 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 9: Piano roll
 
 **Files:**
-- Create: `studio-ui/src/coords.ts`, `studio-ui/src/roll.ts`
+- Create: `studio-ui/src/coords.ts`, `studio-ui/src/colors.ts`, `studio-ui/src/roll.ts`
 - Modify: `studio-ui/src/main.ts`
-- Test: `studio-ui/src/coords.test.ts`
+- Test: `studio-ui/src/coords.test.ts`, `studio-ui/src/colors.test.ts`
 
 **Interfaces:**
 - Consumes: `TakeInfo`, `RNote`.
-- Produces: `interface View { t0: number; t1: number; pLo: number; pHi: number; width: number; height: number }`, `fitView(info: TakeInfo, notes: RNote[], width: number, height: number): View`, `timeToX(v, t)`, `xToTime(v, x)`, `pitchToY(v, p)`; `drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote[], playhead: number | null): View`; `LOUDNESS_LANE = 48` (px).
+- Produces: `interface View { t0: number; t1: number; pLo: number; pHi: number; width: number; height: number }`, `fitView(info: TakeInfo, notes: RNote[], width: number, height: number): View`, `timeToX(v, t)`, `xToTime(v, x)`, `pitchToY(v, p)`; `drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote[], playhead: number | null): View`; `LOUDNESS_LANE = 48` (px); `colors.ts`: `parseRgb(css: string): [number, number, number]`, `tint(acc: string, ground: string, p: number): string` (sRGB mix, `p` in 0..1, returns `rgb(r, g, b)`), `noteStrength(velocity: number): number` (= 0.35 + 0.65 * velocity), `isBlackKey(p: number): boolean`.
 
 - [ ] **Step 1: Failing tests**
 
@@ -2239,9 +2261,64 @@ describe("coords", () => {
 });
 ```
 
-Run: `npm test`. Expected: FAIL, `./coords` not found.
+`studio-ui/src/colors.test.ts`:
 
-- [ ] **Step 2: `coords.ts`**
+```ts
+import { describe, expect, it } from "vitest";
+import { isBlackKey, noteStrength, parseRgb, tint } from "./colors";
+
+describe("colors", () => {
+  it("parses computed rgb and rgba strings", () => {
+    expect(parseRgb("rgb(0, 116, 137)")).toEqual([0, 116, 137]);
+    expect(parseRgb("rgba(242, 242, 238, 0.5)")).toEqual([242, 242, 238]);
+  });
+  it("tints between the ground and the accent", () => {
+    expect(tint("rgb(0, 116, 137)", "rgb(239, 238, 233)", 1)).toBe("rgb(0, 116, 137)");
+    expect(tint("rgb(0, 116, 137)", "rgb(239, 238, 233)", 0)).toBe("rgb(239, 238, 233)");
+    expect(tint("rgb(0, 100, 200)", "rgb(200, 100, 0)", 0.5)).toBe("rgb(100, 100, 100)");
+  });
+  it("velocity maps to tint strength from 35% to 100%", () => {
+    expect(noteStrength(0)).toBeCloseTo(0.35);
+    expect(noteStrength(1)).toBeCloseTo(1);
+  });
+  it("knows the black keys", () => {
+    expect([60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71].map(isBlackKey)).toEqual(
+      [false, true, false, true, false, false, true, false, true, false, true, false],
+    );
+  });
+});
+```
+
+Run: `npm test`. Expected: FAIL, `./coords` and `./colors` not found.
+
+- [ ] **Step 2: `coords.ts` and `colors.ts`**
+
+`studio-ui/src/colors.ts`:
+
+```ts
+/** Canvas cannot read var() or light-dark(): tokens are resolved to rgb() with
+ *  cssColor() from the design system, then mixed here. */
+export function parseRgb(css: string): [number, number, number] {
+  const m = css.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : [0, 0, 0];
+}
+
+/** Mix `acc` over `ground` at strength `p` (0..1), in sRGB. */
+export function tint(acc: string, ground: string, p: number): string {
+  const a = parseRgb(acc);
+  const g = parseRgb(ground);
+  const c = a.map((v, i) => Math.round(v * p + g[i] * (1 - p)));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
+
+/** roll.md: tint strength 35% + 65% * velocity. */
+export const noteStrength = (velocity: number) => 0.35 + 0.65 * velocity;
+
+const BLACK = new Set([1, 3, 6, 8, 10]);
+export const isBlackKey = (p: number) => BLACK.has(((Math.round(p) % 12) + 12) % 12);
+```
+
+`studio-ui/src/coords.ts`:
 
 ```ts
 import type { RNote, TakeInfo } from "./types";
@@ -2270,16 +2347,16 @@ export const xToTime = (v: View, x: number) => v.t0 + (x / v.width) * (v.t1 - v.
 export const pitchToY = (v: View, p: number) => v.height - ((p - v.pLo) / (v.pHi - v.pLo)) * v.height;
 ```
 
-- [ ] **Step 3: `roll.ts`**
+- [ ] **Step 3: `roll.ts`** (follows `vendor/design/roll.md`)
 
 ```ts
+import { cssColor } from "../vendor/design/tokens.js";
+import { isBlackKey, noteStrength, tint } from "./colors";
 import { fitView, pitchToY, timeToX, type View } from "./coords";
 import type { RNote, TakeInfo } from "./types";
 
 export const LOUDNESS_LANE = 48;
-
-const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const CAUSE_VAR = { gap: "--ink", pitch: "--bend", reattack: "--vib" } as const;
+const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote[], playhead: number | null): View {
   const dpr = window.devicePixelRatio || 1;
@@ -2289,47 +2366,77 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
   canvas.height = Math.round(h * dpr);
   const g = canvas.getContext("2d")!;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.clearRect(0, 0, w, h);
 
+  // Resolve tokens on every draw so theme and scheme changes apply on redraw.
+  const c = {
+    ground: cssColor("--ground"),
+    band: cssColor("--band"),
+    ink: cssColor("--ink"),
+    mut: cssColor("--ink-mut"),
+    acc: cssColor("--acc"),
+  };
+  const font = getComputedStyle(document.body).fontFamily;
+
+  g.fillStyle = c.ground;
+  g.fillRect(0, 0, w, h);
   const v = fitView(info, notes, w, h - LOUDNESS_LANE);
+  const row = v.height / (v.pHi - v.pLo);
 
-  // Semitone grid, C rows emphasized.
-  g.lineWidth = 1;
-  for (let p = Math.ceil(v.pLo); p <= v.pHi; p++) {
-    g.strokeStyle = css("--line");
-    g.globalAlpha = p % 12 === 0 ? 1 : 0.35;
-    const y = pitchToY(v, p);
-    g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+  // Key bands: black-key rows in --band, no lines. Octave label at each C.
+  g.font = `10px ${font}`;
+  g.textBaseline = "middle";
+  for (let p = Math.floor(v.pLo); p <= Math.ceil(v.pHi); p++) {
+    const top = pitchToY(v, p + 0.5);
+    if (isBlackKey(p)) {
+      g.fillStyle = c.band;
+      g.fillRect(0, top, w, row);
+    }
+    if (p % 12 === 0) {
+      g.fillStyle = c.mut;
+      g.fillText(`${NAMES[0]}${p / 12 - 1}`, 4, pitchToY(v, p));
+    }
   }
-  g.globalAlpha = 1;
 
-  // Raw sung contour, faint.
-  g.strokeStyle = css("--ink-mut");
+  // Raw sung contour: 1px --ink-mut at 50%.
+  g.strokeStyle = c.mut;
   g.globalAlpha = 0.5;
+  g.lineWidth = 1;
   g.beginPath();
   let pen = false;
-  info.contour.forEach((c, i) => {
-    if (c === null) { pen = false; return; }
+  info.contour.forEach((pc, i) => {
+    if (pc === null) { pen = false; return; }
     const x = timeToX(v, i * info.hop_s);
-    const y = pitchToY(v, c);
+    const y = pitchToY(v, pc);
     if (pen) g.lineTo(x, y); else g.moveTo(x, y);
     pen = true;
   });
   g.stroke();
   g.globalAlpha = 1;
 
-  // Notes, coloured by what started them, with their bend curves.
-  const rowH = Math.max(3, v.height / (v.pHi - v.pLo) - 2);
+  // Notes: tints of the accent; the sounding note is full accent with an ink outline.
+  const noteH = Math.max(2, row - 1);
   for (const n of notes) {
     const x0 = timeToX(v, n.start);
     const x1 = timeToX(v, n.end);
-    const y = pitchToY(v, n.pitch);
-    g.fillStyle = css(CAUSE_VAR[n.cause]);
-    g.globalAlpha = 0.35 + 0.5 * n.velocity;
-    g.fillRect(x0, y - rowH / 2, Math.max(1, x1 - x0 - 1), rowH);
-    g.globalAlpha = 1;
+    const y = pitchToY(v, n.pitch) - noteH / 2;
+    const width = Math.max(1, x1 - x0 - 1);
+    const sounding = playhead !== null && playhead >= n.start && playhead < n.end;
+    g.fillStyle = sounding ? c.acc : tint(c.acc, c.ground, noteStrength(n.velocity));
+    g.fillRect(x0, y, width, noteH);
+    if (sounding) {
+      g.strokeStyle = c.ink;
+      g.strokeRect(x0 + 0.5, y + 0.5, width - 1, noteH - 1);
+    }
+    // What started the note, by mark shape: nothing after a gap.
+    g.strokeStyle = c.ink;
+    if (n.cause === "pitch") {
+      g.beginPath(); g.moveTo(x0, y + noteH + 2); g.lineTo(x0 + 4, y - 2); g.stroke();
+    } else if (n.cause === "reattack") {
+      g.fillStyle = c.ink;
+      g.fillRect(x0, y - 2, 2, noteH + 4);
+    }
+    // Bend curve: 1px ink through the note.
     if (n.bend.length > 1) {
-      g.strokeStyle = css("--ink");
       g.beginPath();
       n.bend.forEach(([t, st], i) => {
         const bx = timeToX(v, t);
@@ -2340,24 +2447,26 @@ export function drawRoll(canvas: HTMLCanvasElement, info: TakeInfo, notes: RNote
     }
   }
 
-  // Loudness lane.
+  // Loudness lane: --ink-mut on a --band strip.
   const top = h - LOUDNESS_LANE;
-  g.fillStyle = css("--ground-3");
+  g.fillStyle = c.band;
   g.fillRect(0, top, w, LOUDNESS_LANE);
-  g.fillStyle = css("--ink-mut");
+  g.fillStyle = c.mut;
   info.loudness.forEach((l, i) => {
     const x = timeToX(v, i * info.hop_s);
     g.fillRect(x, h - l * (LOUDNESS_LANE - 4), Math.max(1, timeToX(v, info.hop_s)), l * (LOUDNESS_LANE - 4));
   });
 
   if (playhead !== null) {
-    g.strokeStyle = css("--bend");
-    const x = timeToX(v, playhead);
+    g.strokeStyle = c.acc;
+    const x = Math.round(timeToX(v, playhead)) + 0.5;
     g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
   }
   return v;
 }
 ```
+
+`NAMES[0]` is "C" because labels are drawn only on C rows.
 
 - [ ] **Step 4: Wire into `main.ts`**
 
@@ -2384,6 +2493,8 @@ export function redraw() {
 }
 
 window.addEventListener("resize", redraw);
+// Canvas colours are resolved per draw; redraw when the system scheme flips.
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 ```
 
 Replace `opened` with:
@@ -2404,7 +2515,7 @@ export async function opened(r: LoadResp) {
 Run: `npm test && npm run build`. Expected: pass, build succeeds.
 
 ```bash
-git add studio-ui && git commit -m "studio-ui: piano roll with contour, cause colours, bends, loudness
+git add studio-ui && git commit -m "studio-ui: piano roll on the design system (key bands, accent tints, cause ticks)
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -2623,12 +2734,15 @@ export function buildControls(root: HTMLElement, initial: Settings, onChange: (s
 
   function sync() {
     for (const [key, [input, val]] of inputs) {
+      const d = SLIDERS.find((x) => x.key === key)!;
       input.value = String(s[key]);
-      val.textContent = `${s[key]} ${SLIDERS.find((d) => d.key === key)!.unit}`;
+      input.style.setProperty("--fill", `${((s[key] - d.min) / (d.max - d.min)) * 100}%`);
+      val.textContent = `${s[key]} ${d.unit}`;
     }
     onsetOff.checked = s.onset_delta === null;
     onsetRange.disabled = s.onset_delta === null;
     if (s.onset_delta !== null) onsetRange.value = String(s.onset_delta);
+    onsetRange.style.setProperty("--fill", `${((Number(onsetRange.value) - 0.1) / (3 - 0.1)) * 100}%`);
     onsetVal.textContent = s.onset_delta === null ? "off" : `+${Math.round(s.onset_delta * 100)}%`;
   }
   sync();
