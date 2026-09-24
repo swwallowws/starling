@@ -9,6 +9,7 @@ import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
 import { Player } from "./player";
 import { AUDIO_URL } from "./api";
+import { Recorder, defaultTakeName, micError } from "./recorder";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -104,7 +105,49 @@ export function onSpace(e: KeyboardEvent, recording: boolean) {
   return true;
 }
 
-document.addEventListener("keydown", (e) => onSpace(e, false));
+const recorder = new Recorder();
+const takeName = $<HTMLInputElement>("take-name");
+takeName.value = defaultTakeName(new Date());
+
+async function toggleRecord() {
+  const btn = $<HTMLButtonElement>("record");
+  if (!recorder.active) {
+    player.stop();
+    try {
+      const t0 = performance.now();
+      await recorder.start((peak) => {
+        const secs = ((performance.now() - t0) / 1000).toFixed(1);
+        $("rec-status").textContent = `${secs} s  ${"|".repeat(Math.round(peak * 20))}`;
+      });
+      btn.textContent = "Stop recording (Space)";
+    } catch (e) {
+      say(micError(e));
+    }
+    return;
+  }
+  btn.disabled = true;
+  const { wav, seconds } = await recorder.stop();
+  btn.textContent = "Record";
+  $("rec-status").textContent = "";
+  say(`Saving and analyzing ${seconds.toFixed(1)} s...`);
+  try {
+    await opened(await api.uploadTake(takeName.value, wav));
+    takeName.value = defaultTakeName(new Date());
+  } catch (e) {
+    say((e as Error).message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$("record").addEventListener("click", toggleRecord);
+
+document.addEventListener("keydown", (e) => {
+  const tag = (e.target as HTMLElement).tagName;
+  const native = ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(tag);
+  if (recorder.active && e.code === "Space" && !native) { e.preventDefault(); void toggleRecord(); return; }
+  onSpace(e, recorder.active);
+});
 
 // Tuning picker and anchor.
 const tuningSel = $<HTMLSelectElement>("tuning");
