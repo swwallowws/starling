@@ -60,3 +60,16 @@ fn convert_writes_a_midi_file() {
     assert!(midly::Smf::parse(&std::fs::read(&output).unwrap()).is_ok());
     std::fs::remove_dir_all(dir).ok();
 }
+
+#[test]
+fn studio_has_help() {
+    let out = Command::new(BIN)
+        .args(["studio", "--help"])
+        .output()
+        .unwrap();
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        text.contains("--port") && text.contains("--no-open"),
+        "{text}"
+    );
+}

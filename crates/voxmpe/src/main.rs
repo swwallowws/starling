@@ -30,6 +30,23 @@ enum Cmd {
         #[command(flatten)]
         settings: SettingsArgs,
     },
+    /// Open the studio in your browser: record or open takes, tune by ear, export
+    Studio {
+        /// A WAV to open right away
+        take: Option<PathBuf>,
+        /// CREPE model path (default: models/crepe-full.onnx or $VOXMPE_MODEL)
+        #[arg(long)]
+        model: Option<PathBuf>,
+        /// First port to try (the next free one is used if busy)
+        #[arg(long, default_value_t = 7878)]
+        port: u16,
+        /// Folder for recordings and exports
+        #[arg(long, default_value = "takes")]
+        takes: PathBuf,
+        /// Don't open the browser
+        #[arg(long)]
+        no_open: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -40,6 +57,13 @@ fn main() -> Result<()> {
             model,
             settings,
         } => convert(input, output, model, settings),
+        Cmd::Studio {
+            take,
+            model,
+            port,
+            takes,
+            no_open,
+        } => studio(take, model, port, takes, no_open),
     }
 }
 
@@ -70,5 +94,29 @@ fn convert(
     std::fs::write(&output, session.export_mid(&settings)?)
         .with_context(|| format!("writing {}", output.display()))?;
     eprintln!("{} notes -> {}", rendered.notes.len(), output.display());
+    Ok(())
+}
+
+fn studio(
+    take: Option<PathBuf>,
+    model: Option<PathBuf>,
+    port: u16,
+    takes: PathBuf,
+    no_open: bool,
+) -> Result<()> {
+    let model = voxmpe::model::load_model(model.as_deref())?;
+    let mut state = voxmpe::server::State::new(Some(model), takes);
+    if let Some(p) = take {
+        state
+            .preload(&p)
+            .with_context(|| format!("opening {}", p.display()))?;
+    }
+    let (server, port) = voxmpe::server::bind(port)?;
+    let url = format!("http://127.0.0.1:{port}/");
+    println!("voxmpe studio: {url}  (Ctrl+C to stop)");
+    if !no_open {
+        let _ = std::process::Command::new("open").arg(&url).spawn();
+    }
+    voxmpe::server::serve(&server, &mut state);
     Ok(())
 }
