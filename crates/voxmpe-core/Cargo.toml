@@ -13,9 +13,9 @@ name = "voxmpe_core"
 path = "src/lib.rs"
 
 [dependencies]
-# ml inference (pure rust) — CREPE pitch front-end
+# ml inference (pure rust): CREPE pitch front-end
 tract-onnx = "0.21"
-# numerics — spectral centroid feature
+# numerics: spectral centroid feature
 realfft = "3.4"
 # midi serialization (MPE SMF writer)
 midly = "0.5"
@@ -27,8 +27,3 @@ thiserror = "2"
 # Examples only; the library takes raw f32 samples and does no I/O.
 hound = "3.5" # WAV read/write
 cpal = "0.15" # mic capture (record_to_midi)
-
-# Optimize dependencies (notably tract) even in dev/test builds so model
-# inference isn't unusably slow during development; our own crate stays debug.
-[profile.dev.package."*"]
-opt-level = 3
