@@ -1897,6 +1897,7 @@ dependencies = [
  "anyhow",
  "clap",
  "hound",
+ "midly",
  "serde",
  "serde_json",
  "voxmpe-core",
