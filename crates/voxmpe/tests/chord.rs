@@ -2,12 +2,12 @@
 //! Pins the reference table in MICROTONAL_SPEC.md ("Chord semantics"): the routing
 //! model (mode -> ordinal, equal division -> ratio-snap) and the beat-rate guard.
 
-use microtonal::chord::{
+use voxmpe::chord::{
     generate_major_triad, major_third_beat_hz, snap_interval, Method, Verdict, NO_TRIAD_BEAT_HZ,
     NO_TRIAD_MAX_CENTS,
 };
-use microtonal::scala::Scale;
-use voxmidi_core::interval::ratio_to_cents as cents;
+use voxmpe::scala::Scale;
+use voxmpe_core::interval::ratio_to_cents as cents;
 
 const MIDDLE_C: f64 = 261.625565; // 1/1 anchor, fixed across every comparison
 

@@ -2,8 +2,8 @@
 //! No model needed; builds an `Analysis` by hand and reads the file back.
 
 use midly::{MidiMessage, Smf, TrackEventKind};
-use voxmidi_core::smf::{write_smf, OutputMode};
-use voxmidi_core::{Analysis, CurvePoint, Note};
+use voxmpe_core::smf::{write_smf, OutputMode};
+use voxmpe_core::{Analysis, CurvePoint, Note};
 
 fn one_note() -> Analysis {
     Analysis {

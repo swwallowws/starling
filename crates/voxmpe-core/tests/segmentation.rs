@@ -2,9 +2,9 @@
 //! thresholds drift. Signals are synthetic but voice-like (harmonics + vibrato
 //! + amplitude envelope). All share one model load.
 
-use voxmidi_core::{analyze, AnalysisConfig, CrepeModel};
+use voxmpe_core::{analyze, AnalysisConfig, CrepeModel};
 
-const MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/models/crepe-full.onnx");
+const MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../models/crepe-full.onnx");
 const SR: u32 = 44_100;
 
 /// Load the model, or `None` (test skips) when it hasn't been downloaded.

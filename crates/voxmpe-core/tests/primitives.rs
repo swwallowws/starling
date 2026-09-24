@@ -1,7 +1,7 @@
 //! Numerical harness for the shared MPE pitch primitive. "Correct" is a NUMBER.
 
-use voxmidi_core::interval::{cents_to_freq, ratio_to_cents};
-use voxmidi_core::mpe::{bend_from_offset, bend_to_cents, freq_to_note_and_bend, MPE_BEND_RANGE};
+use voxmpe_core::interval::{cents_to_freq, ratio_to_cents};
+use voxmpe_core::mpe::{bend_from_offset, bend_to_cents, freq_to_note_and_bend, MPE_BEND_RANGE};
 
 const MPE_RANGE: f64 = MPE_BEND_RANGE;
 

@@ -1,7 +1,7 @@
 //! Microtonal voice-to-MIDI — the distinctive wedge on top of `voxmidi-core`.
 //!
 //! Shared pitch/MPE primitives (freq→note/bend, cents↔ratio↔freq) live in
-//! [`voxmidi_core`]; this crate adds what is microtonal-specific:
+//! [`voxmpe_core`]; this crate adds what is microtonal-specific:
 //! - [`scala`] — Scala `.scl` tuning import (cents and ratio entries, one path).
 //! - [`chord`] — microtonal chord generation (mode -> ordinal, edo -> ratio-snap,
 //!   with a cents-deviation "no stable triad" guard).

@@ -1,9 +1,9 @@
 //! Gate #2: confirm tract-onnx reproduces CREPE f0 from Rust on synthetic tones.
 //! Mirrors the python validation in scripts/export_crepe.py.
 
-use voxmidi_core::CrepeModel;
+use voxmpe_core::CrepeModel;
 
-const MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/models/crepe-full.onnx");
+const MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../models/crepe-full.onnx");
 
 fn sine(freq: f32, secs: f32, sr: u32) -> Vec<f32> {
     let n = (secs * sr as f32) as usize;

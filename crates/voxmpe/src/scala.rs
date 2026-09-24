@@ -8,7 +8,7 @@
 //! second is the note count; then `count` pitch lines. The LAST pitch is the period
 //! (octave `2/1`, tritave `3/1`, …); degree 0 (`1/1` = 0 cents) is implicit.
 
-use voxmidi_core::interval::ratio_to_cents;
+use voxmpe_core::interval::ratio_to_cents;
 
 /// Whether the tuning behaves like a harmonic *mode* (harmony in the degree layout)
 /// or an *equal division* (needs ratio-target chords). Drives chord routing.

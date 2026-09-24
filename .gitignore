@@ -1,9 +1,8 @@
 /target
-
-# Model blobs are large (85 MB CREPE) — fetched/copied locally, never committed.
-/models
+# Model blobs are large (85 MB CREPE): downloaded or exported locally, never committed.
 /models/*.onnx
-
-# Voice takes from record_to_midi: personal recordings, never committed.
+# Voice takes and exports: personal recordings, never committed.
 /takes
+# Built studio UI, embedded at compile time.
+/crates/voxmpe/ui-dist
 .DS_Store

@@ -1,15 +1,15 @@
 [package]
-name = "voxmidi-core"
+name = "voxmpe-core"
 version = "0.1.0"
 edition = "2021"
-description = "Shared voice-to-MPE-MIDI core: pitch, segmentation, and the freq->(note,bend) MPE primitive. Reused by singmidi and microtonal-aud2midi."
+description = "Singing voice to expressive MPE MIDI: CREPE pitch tracking, note segmentation, per-note bend and dynamics."
 
 # Tuning-agnostic, numerically testable primitives shared by every voice->MIDI tool
 # in the Playground. Note SELECTION (12-TET round vs scale-degree quantize) is
-# deliberately NOT here — that is where consumers diverge. Zero dependencies for
+# deliberately NOT here, that is where consumers diverge. Zero dependencies for
 # the interval/mpe layer; pitch/segment migration (phase 2) will add tract-onnx etc.
 [lib]
-name = "voxmidi_core"
+name = "voxmpe_core"
 path = "src/lib.rs"
 
 [dependencies]

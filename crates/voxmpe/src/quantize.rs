@@ -9,7 +9,7 @@
 //! concrete `anchor_hz`; keep it FIXED across every comparison (see MICROTONAL_SPEC.md).
 
 use crate::scala::Scale;
-use voxmidi_core::mpe::freq_to_note_and_bend;
+use voxmpe_core::mpe::freq_to_note_and_bend;
 
 /// A concrete tuning: a scale's degrees pinned to an anchor frequency for its 1/1.
 #[derive(Debug, Clone)]
@@ -69,7 +69,7 @@ impl Tuning {
         69.0 + 12.0 * (snapped / 440.0).log2()
     }
 
-    /// Quantize a fractional MIDI pitch (e.g. `voxmidi_core::Note::pitch_center`) to a
+    /// Quantize a fractional MIDI pitch (e.g. `voxmpe_core::Note::pitch_center`) to a
     /// scale degree and encode it as `(MIDI note, 14-bit pitch bend)`.
     pub fn quantize(&self, midi_pitch_center: f64, bend_range: f64) -> (u8, u16) {
         let freq = 440.0 * 2f64.powf((midi_pitch_center - 69.0) / 12.0);
@@ -80,7 +80,7 @@ impl Tuning {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use voxmidi_core::mpe::{bend_to_cents, MPE_BEND_RANGE};
+    use voxmpe_core::mpe::{bend_to_cents, MPE_BEND_RANGE};
 
     const MIDDLE_C: f64 = 261.625565;
 

@@ -31,8 +31,8 @@ Tuning System is the ground-truth oracle for verifying the pitches.
 | `retune` | retune an analysis to a scale, preserving expressive bend |
 | `chord` | microtonal chord generation (mode→ordinal, edo→ratio-snap) |
 
-Pipeline: `voxmidi_core::analyze` → `retune(&analysis, &Tuning::new(scale, anchor))` →
-`voxmidi_core::smf::write_smf`. Design rationale and reference numbers in
+Pipeline: `voxmpe_core::analyze` → `retune(&analysis, &Tuning::new(scale, anchor))` →
+`voxmpe_core::smf::write_smf`. Design rationale and reference numbers in
 [`MICROTONAL_SPEC.md`](MICROTONAL_SPEC.md).
 
 ## Test

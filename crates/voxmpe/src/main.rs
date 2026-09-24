@@ -1,21 +1,21 @@
 //! microtonal-voxmidi CLI — WAV in, microtonal MPE `.mid` out.
 //!
-//! Pipeline: `voxmidi_core::analyze` (CREPE pitch + segmentation + expression) ->
-//! [`microtonal::retune`] (snap each note to a `.scl` degree, preserve vibrato) ->
-//! `voxmidi_core::smf::write_smf`. Omit `--tuning` for plain 12-TET (the successor to
+//! Pipeline: `voxmpe_core::analyze` (CREPE pitch + segmentation + expression) ->
+//! [`voxmpe::retune`] (snap each note to a `.scl` degree, preserve vibrato) ->
+//! `voxmpe_core::smf::write_smf`. Omit `--tuning` for plain 12-TET (the successor to
 //! the retired `singmidi`). Mic capture is intentionally left out (no ALSA dep).
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 
-use microtonal::quantize::Tuning;
-use microtonal::retune::retune;
-use microtonal::scala::Scale;
-use voxmidi_core::smf::{write_smf, OutputMode};
-use voxmidi_core::{analyze, AnalysisConfig, CrepeModel};
+use voxmpe::quantize::Tuning;
+use voxmpe::retune::retune;
+use voxmpe::scala::Scale;
+use voxmpe_core::smf::{write_smf, OutputMode};
+use voxmpe_core::{analyze, AnalysisConfig, CrepeModel};
 
-/// CREPE model path (85 MB, gitignored — regenerate via singmidi's export_crepe.py).
-const DEFAULT_MODEL: &str = "../voxmidi-core/models/crepe-full.onnx";
+/// CREPE model path (85 MB, gitignored; see models/README.md).
+const DEFAULT_MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../models/crepe-full.onnx");
 /// 1/1 anchor default: middle C, which aligns a 12-TET scale to concert A440.
 const MIDDLE_C_HZ: f64 = 261.625565;
 

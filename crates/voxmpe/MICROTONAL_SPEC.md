@@ -9,7 +9,7 @@ word — **nih-plug**. The real sibling was `../singmidi`, an **offline CLI** do
 `.mid` you import into Ableton** — no plugin. Since 12-TET is just one tuning
 (`12-tet.scl`), that tool is a *subset* of this one, so the two are being merged:
 
-- **`../voxmidi-core`** (crate `voxmidi_core`) — the shared **engine**: tuning-agnostic
+- **`../voxmidi-core`** (crate `voxmpe_core`) — the shared **engine**: tuning-agnostic
   primitives (`interval`, `mpe`) plus the pitch/segmentation/expression/serializer
   migrated out of singmidi. The 85 MB CREPE model stays gitignored.
 - **This project** (`microtonal-voxmidi`) — the ONE **app**: depends on the engine, owns

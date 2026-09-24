@@ -1,0 +1,8 @@
+[workspace]
+members = ["crates/voxmpe-core", "crates/voxmpe"]
+resolver = "2"
+
+# Optimize dependencies (notably tract) even in dev/test builds so CREPE
+# inference isn't unusably slow during development; our crates stay debug.
+[profile.dev.package."*"]
+opt-level = 3

@@ -1,11 +1,11 @@
 //! Shared by the examples: flag parsing, model loading, note printout, MIDI output.
 
 use anyhow::{bail, Context, Result};
-use voxmidi_core::segment::{self, Cause};
-use voxmidi_core::smf::{write_smf, OutputMode};
-use voxmidi_core::{analyze, AnalysisConfig, CrepeModel};
+use voxmpe_core::segment::{self, Cause};
+use voxmpe_core::smf::{write_smf, OutputMode};
+use voxmpe_core::{analyze, AnalysisConfig, CrepeModel};
 
-const DEFAULT_MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/models/crepe-full.onnx");
+const DEFAULT_MODEL: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../models/crepe-full.onnx");
 const NAMES: [&str; 12] = [
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
 ];

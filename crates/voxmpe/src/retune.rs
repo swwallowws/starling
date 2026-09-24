@@ -6,10 +6,10 @@
 //! shifted by one constant so it now deviates from the retuned center instead of the
 //! 12-TET one. When a note has no captured curve, a single static tuning bend is
 //! injected so the retuning still sounds. The result is a plain `Analysis` that the
-//! shared [`voxmidi_core::smf::write_smf`] serializes unchanged.
+//! shared [`voxmpe_core::smf::write_smf`] serializes unchanged.
 
 use crate::quantize::Tuning;
-use voxmidi_core::types::{Analysis, CurvePoint, Note};
+use voxmpe_core::types::{Analysis, CurvePoint, Note};
 
 /// Retune every note of `analysis` to `tuning`. Frames and timing are untouched.
 pub fn retune(analysis: &Analysis, tuning: &Tuning) -> Analysis {

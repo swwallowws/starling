@@ -11,7 +11,7 @@
 //! least-beating dyad and flag it — "no stable triad here" is a number, not a shrug.
 
 use crate::scala::{KindSource, Scale, ScaleKind};
-use voxmidi_core::interval::{cents_to_freq, ratio_to_cents};
+use voxmpe_core::interval::{cents_to_freq, ratio_to_cents};
 
 /// "No stable triad" guard, in CENTS of deviation from the tuning-native ratio
 /// target. Register-independent (unlike beat Hz), so it keeps 12-TET's ~14c-off
