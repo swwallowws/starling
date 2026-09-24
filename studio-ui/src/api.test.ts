@@ -13,6 +13,13 @@ describe("api", () => {
     expect(e.message).toBe("tuning: bad note count");
   });
 
+  it("surfaces a non-JSON error body as an ApiError with the response status", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>Bad gateway</html>", { status: 502 })));
+    const e = await render(1, DEFAULT_SETTINGS).catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.status).toBe(502);
+  });
+
   it("sends take_id and settings", async () => {
     const f = vi.fn(async () => new Response(JSON.stringify({ notes: [], flags: "" })));
     vi.stubGlobal("fetch", f);

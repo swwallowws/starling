@@ -12,7 +12,13 @@ export class ApiError extends Error {
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const text = await res.text();
-  const body = text ? JSON.parse(text) : {};
+  let body: any;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    if (!res.ok) throw new ApiError(res.status, res.statusText || "request failed");
+    throw new ApiError(res.status, "unexpected response from the studio");
+  }
   if (!res.ok) throw new ApiError(res.status, body.error ?? res.statusText);
   return body as T;
 }

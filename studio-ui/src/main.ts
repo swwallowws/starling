@@ -11,7 +11,9 @@ export function say(text: string) {
 async function refreshTakes(select?: string) {
   const takes = await api.listTakes();
   const sel = $<HTMLSelectElement>("takes");
-  sel.innerHTML = `<option value="">Open a take...</option>` + takes.map((t) => `<option>${t}</option>`).join("");
+  sel.textContent = "";
+  sel.add(new Option("Open a take...", ""));
+  for (const t of takes) sel.add(new Option(t, t));
   if (select) sel.value = select;
 }
 
