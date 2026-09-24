@@ -3,9 +3,11 @@
 //! ```text
 //! cargo run --release --example record_to_midi -- take1
 //! cargo run --release --example record_to_midi -- take1 --single-channel
+//! cargo run --release --example record_to_midi -- take1 --seconds 8
 //! ```
 //!
-//! Records until you press Enter, then writes `take1.wav` (the raw take, so you
+//! Records until you press Enter (or for `--seconds N`, for when there's no
+//! interactive stdin), then writes `take1.wav` (the raw take, so you
 //! can re-run it through `wav_to_midi`) and `take1.mid`. Sing one note at a time:
 //! the engine is monophonic.
 
@@ -20,10 +22,24 @@ use cpal::{FromSample, SampleFormat, SizedSample};
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let single = args.iter().any(|a| a == "--single-channel");
-    let names: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
+    let mut single = false;
+    let mut seconds: Option<f32> = None;
+    let mut names = Vec::new();
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--single-channel" => single = true,
+            "--seconds" => {
+                let v = it.next().context("--seconds needs a number")?;
+                seconds = Some(v.parse().with_context(|| format!("bad --seconds {v}"))?);
+            }
+            _ => names.push(a),
+        }
+    }
     let [base] = names[..] else {
-        bail!("usage: record_to_midi <name> [--single-channel]  (writes <name>.wav + <name>.mid)");
+        bail!(
+            "usage: record_to_midi <name> [--seconds N] [--single-channel]  (writes <name>.wav + <name>.mid)"
+        );
     };
 
     // Load first so the (slow) model setup doesn't happen after you've sung.
@@ -46,8 +62,16 @@ fn main() -> Result<()> {
         other => bail!("unsupported mic sample format {other:?}"),
     };
     stream.play()?;
-    println!("recording... press Enter to stop");
-    std::io::stdin().lock().lines().next();
+    match seconds {
+        Some(secs) => {
+            println!("recording for {secs} s... sing now");
+            std::thread::sleep(std::time::Duration::from_secs_f32(secs));
+        }
+        None => {
+            println!("recording... press Enter to stop");
+            std::io::stdin().lock().lines().next();
+        }
+    }
     drop(stream);
 
     let audio = std::mem::take(&mut *buf.lock().unwrap());
