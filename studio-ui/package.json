@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:wasm": "wasm-pack build ../crates/voxmpe-web --release --target web --out-dir ../../studio-ui/src/wasm-pkg --out-name voxmpe_web",
+    "build:web": "npm run build:wasm && node scripts/copy-model.mjs && tsc --noEmit -p tsconfig.web.json && vite build --mode web",
+    "smoke:wasm": "node scripts/wasm-smoke.mjs",
+    "preview:web": "vite preview --mode web --port 4318 --strictPort"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
