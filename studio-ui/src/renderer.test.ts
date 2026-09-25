@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "./api";
+import { ApiError } from "./backend";
 import { createRenderer } from "./renderer";
 import { DEFAULT_SETTINGS, type Rendered, type Settings } from "./types";
 

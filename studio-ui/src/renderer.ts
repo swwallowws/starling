@@ -1,4 +1,4 @@
-import { ApiError } from "./api";
+import { ApiError } from "./backend";
 import type { Rendered, Settings } from "./types";
 
 export function createRenderer(

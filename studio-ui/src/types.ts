@@ -67,12 +67,17 @@ export interface Rendered {
 export interface LoadResp {
   take_id: number;
   info: TakeInfo;
+  /** True when the analysis came from the browser's cache. */
+  cached?: boolean;
 }
 
 export interface SavedFile {
   format: "mid" | "als";
-  path: string;
+  /** Where the local studio saved it; null in the browser (it was downloaded). */
+  path: string | null;
   file_name: string;
+  /** URL the drag handle hands to Chrome's DownloadURL. */
+  url: string;
 }
 
 export interface ExportResp {

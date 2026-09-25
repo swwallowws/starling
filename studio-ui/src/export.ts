@@ -6,9 +6,8 @@ export const FORMATS: Format[] = ["mid", "als"];
 const MIME: Record<Format, string> = { mid: "audio/midi", als: "application/octet-stream" };
 const KEY = "voxmpe.formats";
 
-export const exportedUrl = (f: Format) => `/api/exported.${f}`;
-export const downloadUrlData = (f: Format, fileName: string, origin: string) =>
-  `${MIME[f]}:${fileName}:${origin}${exportedUrl(f)}`;
+/** Chrome's DownloadURL value for dragging `url` out as `fileName`. */
+export const downloadUrlData = (f: Format, fileName: string, url: string) => `${MIME[f]}:${fileName}:${url}`;
 export const settingsKey = (s: Settings) => JSON.stringify(s);
 
 /** The formats after ticking (`on`) or unticking `f`; the last one can't be unticked. */

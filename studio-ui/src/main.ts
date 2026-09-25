@@ -1,5 +1,5 @@
 import "./styles.css";
-import * as api from "./api";
+import { backend as api } from "./backend-impl";
 import { drawRoll } from "./roll";
 import { attachRollInput } from "./roll-input";
 import type { View } from "./coords";
@@ -14,7 +14,6 @@ import { startPoint } from "./synth";
 import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
 import { Player } from "./player";
-import { AUDIO_URL, currentTake } from "./api";
 import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
 import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
 import type { SavedFile } from "./types";
@@ -198,7 +197,7 @@ function updateDrag() {
     const h = handle(`Drag ${f.file_name}`, true);
     h.title = f.format === "als" ? "Drop into Live: the clip keeps each note's pitch curve" : "Drop into any DAW";
     h.addEventListener("dragstart", (e) => {
-      e.dataTransfer?.setData("DownloadURL", downloadUrlData(f.format, f.file_name, location.origin));
+      e.dataTransfer?.setData("DownloadURL", downloadUrlData(f.format, f.file_name, f.url));
     });
     drags.append(h);
   }
@@ -216,8 +215,8 @@ $("save").addEventListener("click", async () => {
     const settings = store.get();
     const r = await api.exportFiles(app.takeId, settings, formats);
     saved = { key: settingsKey(settings), files: r.files, takeId: app.takeId };
-    $("saved-path").textContent = r.files.map((f) => f.path).join("  ");
-    $("reveal").hidden = false;
+    $("saved-path").textContent = r.files.map((f) => f.path ?? f.file_name).join("  ");
+    $("reveal").hidden = !api.canReveal;
   } catch (e) {
     say((e as Error).message);
   }
@@ -323,7 +322,7 @@ export async function opened(r: LoadResp) {
   player.stop();
   rollInput.clear();
   app.playhead = 0;
-  await player.load(AUDIO_URL);
+  await player.load(api.audioUrl());
   // A new take: the previous export no longer applies.
   $("saved-path").textContent = "";
   $("reveal").hidden = true;
@@ -361,6 +360,7 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
 });
 
 // Show a take the studio was started with (`voxmpe studio take.wav`), else just list takes.
-currentTake()
+api
+  .currentTake()
   .then((r) => (r ? opened(r) : refreshTakes()))
   .catch((e) => say(e.message));

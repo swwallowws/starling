@@ -21,11 +21,11 @@ const throwing = {
 
 describe("export", () => {
   it("builds Chrome's DownloadURL value per format", () => {
-    expect(downloadUrlData("mid", "take1_studio.mid", "http://127.0.0.1:7878")).toBe(
+    expect(downloadUrlData("mid", "take1_studio.mid", "http://127.0.0.1:7878/api/exported.mid")).toBe(
       "audio/midi:take1_studio.mid:http://127.0.0.1:7878/api/exported.mid",
     );
-    expect(downloadUrlData("als", "take1_studio.als", "http://127.0.0.1:7878")).toBe(
-      "application/octet-stream:take1_studio.als:http://127.0.0.1:7878/api/exported.als",
+    expect(downloadUrlData("als", "take1_studio.als", "blob:http://x/1234")).toBe(
+      "application/octet-stream:take1_studio.als:blob:http://x/1234",
     );
   });
   it("settings changes make a saved export stale", () => {
