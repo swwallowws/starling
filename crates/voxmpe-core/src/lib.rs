@@ -33,6 +33,11 @@ pub mod segment;
 pub mod smf;
 pub mod types;
 
+// Compile the README's examples as doctests, so they can't drift from the API.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 pub use config::{AnalysisConfig, ExpressionConfig, SegmentationConfig};
 pub use pitch::CrepeModel;
 pub use types::{Analysis, CurvePoint, Frame, Note};
