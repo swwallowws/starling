@@ -7,7 +7,8 @@ import type { LoadResp, Preset, RNote, TakeInfo } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
 import { buildControls } from "./controls";
 import { spaceAction, zoomKey } from "./keys";
-import { createSettingsStore } from "./settings-store";
+import { createSettingsStore, loadSettings, saveSettings } from "./settings-store";
+import { missingFeatures } from "./web/support";
 import { createTuning, type TuningView } from "./tuning";
 import { anchorNotes, formatHz, matchAnchor } from "./anchor";
 import { startPoint } from "./synth";
@@ -23,6 +24,18 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 export function say(text: string) {
   $("message").textContent = text;
 }
+
+if (api.kind === "web") {
+  $("privacy").hidden = false;
+  const missing = missingFeatures();
+  if (missing.length) {
+    say(`This browser is missing ${missing.join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
+    for (const id of ["record", "takes"]) $<HTMLButtonElement>(id).disabled = true;
+  }
+}
+
+/** Progress for an analysis, shown in the message line. */
+const analyzing = (name: string) => (f: number) => say(`Analyzing ${name}... ${Math.round(f * 100)}%`);
 
 /** Take-picker value that opens a WAV from anywhere on disk. */
 const OPEN_FILE = "__open_file__";
@@ -71,7 +84,8 @@ window.addEventListener("resize", redraw);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 
 /** The single owner of the settings; controls and the tuning picker send patches. */
-const store = createSettingsStore(DEFAULT_SETTINGS);
+const store = createSettingsStore(loadSettings(localStorageOrNull(), DEFAULT_SETTINGS));
+store.subscribe((s) => saveSettings(localStorageOrNull(), s));
 
 const renderer = createRenderer(
   api.render,
@@ -144,7 +158,7 @@ async function toggleRecord() {
   $("rec-status").textContent = "";
   say(`Saving and analyzing ${seconds.toFixed(1)} s...`);
   try {
-    await opened(await api.uploadTake(takeName.value, wav));
+    await opened(await api.uploadTake(takeName.value, wav, analyzing(takeName.value)));
     takeName.value = defaultTakeName(new Date());
   } catch (e) {
     say((e as Error).message);
@@ -183,6 +197,10 @@ function localStorageOrNull(): Storage {
 
 /** One drag handle per saved file, live only while it matches the current take and settings. */
 function updateDrag() {
+  if (!api.canDragOut) {
+    drags.replaceChildren();
+    return;
+  }
   const fresh = !!saved && saved.takeId === app.takeId && saved.key === settingsKey(store.get());
   drags.replaceChildren();
   if (!saved) {
@@ -254,7 +272,8 @@ function showTuning(v: TuningView) {
   tuningSel.textContent = "";
   tuningSel.add(new Option("12-TET", ""));
   for (const p of presets) tuningSel.add(new Option(p.name, `preset:${p.id}`));
-  if (v.custom) tuningSel.add(new Option(v.custom.name, "custom"));
+  // A remembered built-in tuning starts as `custom` too; list it only once.
+  if (v.custom && !presets.some((p) => p.scl === v.custom!.scl)) tuningSel.add(new Option(v.custom.name, "custom"));
   tuningSel.add(new Option("Load .scl...", "load"));
   const a = v.active;
   const isPreset = a && presets.some((p) => p.id === a.name && p.scl === a.scl);
@@ -262,7 +281,7 @@ function showTuning(v: TuningView) {
   $("tuning-error").textContent = v.error ? `${v.error} (kept the previous tuning)` : "";
 }
 const tuning = createTuning(store, showTuning);
-showTuning(tuningView);
+showTuning(tuning.view());
 api
   .listTunings()
   .then((list) => {
@@ -318,6 +337,8 @@ export async function opened(r: LoadResp) {
   app.takeId = r.take_id;
   app.info = r.info;
   say(r.info.warning ?? `${r.info.name}: ${r.info.duration_s.toFixed(1)} s`);
+  document.body.dataset.analysis = r.cached ? "cached" : "fresh";
+  $("delete-take").hidden = !api.canDelete;
   await refreshTakes(r.info.name);
   player.stop();
   rollInput.clear();
@@ -337,7 +358,7 @@ wavFile.addEventListener("change", async () => {
   if (!f) return;
   say(`Analyzing ${f.name}...`);
   try {
-    await opened(await api.uploadTake(takeNameFromFile(f.name), await f.arrayBuffer()));
+    await opened(await api.uploadTake(takeNameFromFile(f.name), await f.arrayBuffer(), analyzing(f.name)));
   } catch (err) {
     say((err as Error).message);
   }
@@ -353,14 +374,42 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
   if (!name) return;
   say(`Analyzing ${name}...`);
   try {
-    await opened(await api.openTake(name));
+    await opened(await api.openTake(name, analyzing(name)));
   } catch (err) {
     say((err as Error).message);
   }
+});
+
+$("delete-take").addEventListener("click", async () => {
+  const name = app.info?.name;
+  if (!name || !confirm(`Delete ${name} from this browser?`)) return;
+  try {
+    await api.deleteTake(name);
+  } catch (e) {
+    say((e as Error).message);
+    return;
+  }
+  player.stop();
+  app.info = null;
+  app.takeId = 0;
+  app.notes = [];
+  saved = null;
+  const roll = $<HTMLCanvasElement>("roll");
+  roll.getContext("2d")?.clearRect(0, 0, roll.width, roll.height);
+  $("delete-take").hidden = true;
+  $("note-count").textContent = "";
+  updateDrag();
+  say(`Deleted ${name}.`);
+  await refreshTakes();
 });
 
 // Show a take the studio was started with (`voxmpe studio take.wav`), else just list takes.
 api
   .currentTake()
   .then((r) => (r ? opened(r) : refreshTakes()))
-  .catch((e) => say(e.message));
+  .catch((e) => {
+    say(`${e.message}. `);
+    const retry = Object.assign(document.createElement("button"), { textContent: "Retry" });
+    retry.onclick = () => location.reload();
+    $("message").append(retry);
+  });

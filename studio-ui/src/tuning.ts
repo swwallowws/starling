@@ -10,7 +10,11 @@ export interface TuningView { active: Scale | null; custom: Scale | null; error:
 /** Tuning picker state: a choice becomes active only after it renders; a bad
  *  file shows its error until the user chooses again. */
 export function createTuning(store: SettingsStore, onView: (v: TuningView) => void) {
-  let view: TuningView = { active: null, custom: null, error: null };
+  // Start from the store's tuning (remembered from the last visit), also offered
+  // as the custom choice so switching away and back keeps it.
+  const { tuning_name, tuning_scl } = store.get();
+  const remembered = tuning_scl ? { name: tuning_name ?? "custom.scl", scl: tuning_scl } : null;
+  let view: TuningView = { active: remembered, custom: remembered, error: null };
   let pending: { scale: Scale; file: boolean } | null = null;
   const show = (next: Partial<TuningView>) => { view = { ...view, ...next }; onView(view); };
   const apply = (sc: Scale | null) =>
@@ -28,6 +32,8 @@ export function createTuning(store: SettingsStore, onView: (v: TuningView) => vo
   };
 
   return {
+    /** What the picker should show now. */
+    view: () => view,
     /** A built-in tuning, or null for 12-TET. */
     choose: (sc: Scale | null) => pick(sc, false),
     /** A `.scl` the user loaded. */

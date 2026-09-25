@@ -32,6 +32,19 @@ describe("tuning picker state", () => {
     expect(last()).toEqual({ active: file, custom: file, error: null });
   });
 
+  it("starts from a remembered tuning, which a bad file then falls back to", () => {
+    const store = createSettingsStore({ ...DEFAULT_SETTINGS, tuning_name: "31edo.scl", tuning_scl: "good" });
+    const t = createTuning(store, () => {});
+    expect(t.view()).toEqual({ active: file, custom: file, error: null });
+    t.loadFile(bad);
+    t.renderError("tuning: bad note count");
+    expect(store.get()).toMatchObject({ tuning_name: "31edo.scl", tuning_scl: "good" });
+  });
+
+  it("starts at 12-TET when nothing is remembered", () => {
+    expect(setup().t.view()).toEqual({ active: null, custom: null, error: null });
+  });
+
   it("a bad file shows its error, reverts, and the error survives the retry render", () => {
     const { store, t, last } = setup();
     t.choose(makam);
