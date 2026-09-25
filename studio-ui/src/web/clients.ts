@@ -34,7 +34,7 @@ export interface StudioClient {
   finish(results: Float32Array): Promise<{ info: TakeInfo; frames: Float32Array }>;
   restore(name: string, wav: ArrayBuffer, frames: Float32Array): Promise<TakeInfo>;
   render(settings: Settings): Promise<Rendered>;
-  exportFile(settings: Settings, format: Format): Promise<Uint8Array>;
+  exportFile(settings: Settings, format: Format): Promise<Uint8Array<ArrayBuffer>>;
   tunings(): Promise<Preset[]>;
 }
 

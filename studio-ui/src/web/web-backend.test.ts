@@ -1,0 +1,100 @@
+import { IDBFactory } from "fake-indexeddb";
+import { describe, expect, it, vi } from "vitest";
+import { ApiError } from "../backend";
+import type { StudioClient } from "./clients";
+import { createWebBackend, type WebDeps } from "./web-backend";
+import { openTakeStore } from "./take-store";
+import { DEFAULT_SETTINGS, type TakeInfo } from "../types";
+
+const info = (name: string): TakeInfo => ({ name, duration_s: 1, hop_s: 0.01, contour: [], loudness: [], warning: null });
+
+function fakeStudio(): StudioClient & { calls: string[] } {
+  const calls: string[] = [];
+  return {
+    calls,
+    load: async (name) => (calls.push(`load ${name}`), { audio16: new Float32Array(10), active: Uint32Array.from([0, 1, 2]) }),
+    finish: async (r) => (calls.push(`finish ${r.length}`), { info: info("a.wav"), frames: new Float32Array([0.01, 9]) }),
+    restore: async (name) => (calls.push(`restore ${name}`), info(name)),
+    render: async () => ({ notes: [], flags: "" }),
+    exportFile: async (_s, f) => (calls.push(`export ${f}`), new Uint8Array([f === "mid" ? 1 : 2])),
+    tunings: async () => [],
+  };
+}
+
+async function setup() {
+  const studio = fakeStudio();
+  const downloads: string[] = [];
+  const deps: WebDeps = {
+    store: await openTakeStore(new IDBFactory()),
+    studio,
+    pitch: vi.fn(async () => [{ run: async (_a: Float32Array, idx: Uint32Array) => new Float32Array(idx.length * 2) }]),
+    objectUrl: (_b, type) => `blob:${type}`,
+    download: (_u, name) => downloads.push(name),
+  };
+  return { backend: createWebBackend(deps, true), studio, deps, downloads };
+}
+
+describe("web backend", () => {
+  it("analyzes a new take across the pitch workers and caches the result", async () => {
+    const { backend, studio, deps } = await setup();
+    const progress: number[] = [];
+    const r = await backend.uploadTake("a", new ArrayBuffer(8), (f) => progress.push(f));
+    expect(r.info.name).toBe("a.wav");
+    expect(r.cached).toBe(false);
+    expect(studio.calls).toEqual(["load a.wav", "finish 6"]);
+    expect(progress.at(-1)).toBe(1);
+    expect(Array.from((await deps.store.get("a.wav"))!.frames!)).toEqual([0.01, 9].map(Math.fround));
+    expect(await backend.listTakes()).toEqual(["a.wav"]);
+    expect(backend.audioUrl()).toBe("blob:audio/wav");
+  });
+
+  it("reopens a cached take without analysis", async () => {
+    const { backend, studio, deps } = await setup();
+    await backend.uploadTake("a", new ArrayBuffer(8));
+    const r = await backend.openTake("a.wav");
+    expect(r.cached).toBe(true);
+    expect(studio.calls.at(-1)).toBe("restore a.wav");
+    expect(deps.pitch).toHaveBeenCalledTimes(1);
+    expect(r.take_id).toBeGreaterThan(0);
+  });
+
+  it("saves each ticked format as a download with a drag URL", async () => {
+    const { backend, downloads } = await setup();
+    const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));
+    const r = await backend.exportFiles(take_id, DEFAULT_SETTINGS, ["mid", "als"]);
+    expect(downloads).toEqual(["a_studio.mid", "a_studio.als"]);
+    expect(r.files.map((f) => [f.format, f.path, f.url])).toEqual([
+      ["mid", null, "blob:audio/midi"],
+      ["als", null, "blob:application/octet-stream"],
+    ]);
+  });
+
+  it("rejects work on a take that is no longer open, like the server's 409", async () => {
+    const { backend } = await setup();
+    const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));
+    await backend.uploadTake("b", new ArrayBuffer(8));
+    const e = await backend.render(take_id, DEFAULT_SETTINGS).catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.status).toBe(409);
+  });
+
+  it("engine errors become ApiError 400 and a failed analysis caches nothing", async () => {
+    const { backend, deps } = await setup();
+    deps.studio.load = async () => {
+      throw new ApiError(400, "this take is 11 minutes long; the browser studio takes up to 10 minutes");
+    };
+    const e = await backend.uploadTake("long", new ArrayBuffer(8)).catch((x) => x);
+    expect(e.status).toBe(400);
+    expect(e.message).toContain("10 minutes");
+    expect((await deps.store.get("long.wav"))!.frames).toBeNull();
+  });
+
+  it("deletes takes and declares its abilities", async () => {
+    const { backend } = await setup();
+    await backend.uploadTake("a", new ArrayBuffer(8));
+    await backend.deleteTake("a.wav");
+    expect(await backend.listTakes()).toEqual([]);
+    expect([backend.kind, backend.canReveal, backend.canDelete, backend.canDragOut]).toEqual(["web", false, true, true]);
+    expect(await backend.currentTake()).toBeNull();
+  });
+});
