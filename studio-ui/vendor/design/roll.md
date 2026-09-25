@@ -35,7 +35,7 @@ Key bands in CSS, for rows of height `R` with the top row a B:
 
 ## Curves and lanes
 
-- Pitch curves are 1px lines: bends in `--ink` through the note; the raw sung contour in `--ink-mut` at 50% opacity.
+- Pitch curves: bends are 2px `--ink` lines through the note; the raw sung contour is a 1.5px `--ink-mut` line at 50% opacity, so the MIDI pitch reads first. Round line joins. A legend that shows them uses the same widths.
 - Loudness and waveform lanes: `--ink-mut` fill on a `--band` strip.
 
 ## Visualizers
