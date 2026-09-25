@@ -11,16 +11,22 @@ path = "src/lib.rs"
 [[bin]]
 name = "voxmpe"
 path = "src/main.rs"
+required-features = ["native"]
+
+[features]
+default = ["native"]
+# The CLI, the studio server and reading the model from disk. Off for the browser build.
+native = ["dep:clap", "dep:tiny_http", "dep:include_dir"]
 
 [dependencies]
 voxmpe-core = { path = "../voxmpe-core" }
 hound = "3.5"
 anyhow = "1"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive"], optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tiny_http = "0.12"
-include_dir = "0.7"
+tiny_http = { version = "0.12", optional = true }
+include_dir = { version = "0.7", optional = true }
 expressive-liveset = { git = "ssh://git@github.com/swwallowws/expressive-liveset.git", rev = "28d48a713b26e61cd1e08274a673ae741d32f435" }
 
 [dev-dependencies]

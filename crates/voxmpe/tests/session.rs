@@ -225,3 +225,20 @@ fn the_live_set_has_the_notes_and_curves_the_studio_shows() {
     let points: usize = shown.iter().map(|n| n.bend.len()).sum();
     assert_eq!(xml.matches("<PerNoteEvent ").count(), 2 * points);
 }
+
+/// The browser rebuilds a session from frames analyzed elsewhere: it must be
+/// the same take as one loaded natively.
+#[test]
+fn a_session_from_frames_matches_a_loaded_one() {
+    let Some(m) = model() else { return };
+    let w = wav(&step(0.3));
+    let loaded = Session::load("step", w.clone(), &m).unwrap();
+    let rebuilt = Session::from_frames("step", w, loaded.frames().clone()).unwrap();
+    let s = Settings::default();
+    assert_eq!(
+        serde_json::to_string(&loaded.info()).unwrap(),
+        serde_json::to_string(&rebuilt.info()).unwrap()
+    );
+    assert_eq!(loaded.export_mid(&s).unwrap(), rebuilt.export_mid(&s).unwrap());
+    assert_eq!(loaded.export_als(&s).unwrap(), rebuilt.export_als(&s).unwrap());
+}

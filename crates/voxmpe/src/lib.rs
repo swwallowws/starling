@@ -11,12 +11,15 @@
 pub mod als;
 pub mod audio;
 pub mod chord;
+#[cfg(feature = "native")]
 pub mod cli;
 pub mod expression;
+#[cfg(feature = "native")]
 pub mod model;
 pub mod quantize;
 pub mod retune;
 pub mod scala;
+#[cfg(feature = "native")]
 pub mod server;
 pub mod session;
 pub mod settings;

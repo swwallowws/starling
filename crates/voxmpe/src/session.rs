@@ -61,16 +61,32 @@ impl Session {
     pub fn load(name: &str, wav: Vec<u8>, model: &CrepeModel) -> Result<Session> {
         let (audio, sr) = decode_wav(&wav)?;
         let frames = track(&audio, sr, model, &AnalysisConfig::default())?;
-        let warning = (peak(&audio) < QUIET_PEAK).then(|| {
+        Ok(Session::assemble(name, wav, &audio, sr, frames))
+    }
+
+    /// A take whose slow analysis ran elsewhere (the browser's pitch workers,
+    /// or a cache). `frames` must come from this same WAV.
+    pub fn from_frames(name: &str, wav: Vec<u8>, frames: Frames) -> Result<Session> {
+        let (audio, sr) = decode_wav(&wav)?;
+        Ok(Session::assemble(name, wav, &audio, sr, frames))
+    }
+
+    /// The slow stage's output, to cache.
+    pub fn frames(&self) -> &Frames {
+        &self.frames
+    }
+
+    fn assemble(name: &str, wav: Vec<u8>, audio: &[f32], sr: u32, frames: Frames) -> Session {
+        let warning = (peak(audio) < QUIET_PEAK).then(|| {
             "Very quiet take: check that the right mic is selected and its level is up.".to_string()
         });
-        Ok(Session {
+        Session {
             name: name.to_string(),
             wav,
             duration_s: audio.len() as f32 / sr as f32,
             frames,
             warning,
-        })
+        }
     }
 
     pub fn info(&self) -> TakeInfo {
