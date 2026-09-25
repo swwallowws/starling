@@ -1,8 +1,11 @@
 // The browser build's engine (vite aliases ./backend-impl to this file in web mode).
+// Importing it starts nothing: the take store and the studio worker are made on
+// first use, so the page can check browser support first.
 import type { Backend } from "./backend";
-import { pitchJob, studioClient } from "./web/clients";
+import { pitchJob, studioClient, type StudioClient } from "./web/clients";
+import { lazy } from "./web/lazy";
 import { workerCount } from "./web/pool";
-import { openTakeStore } from "./web/take-store";
+import { openTakeStore, type TakeStore } from "./web/take-store";
 import { createWebBackend } from "./web/web-backend";
 
 /** Chrome does not drag a blob: DownloadURL out of the page (checked 2026-09-25),
@@ -18,16 +21,19 @@ async function loadModel(): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
-const store = await openTakeStore();
-
 export const backend: Backend = createWebBackend(
   {
-    store,
-    studio: studioClient(studioWorker()),
+    store: lazy<TakeStore>(() => openTakeStore()),
+    studio: lazy<StudioClient>(() => studioClient(studioWorker())),
     async pitch() {
       const model = await loadModel();
-      const n = workerCount(navigator.hardwareConcurrency);
-      return Promise.all(Array.from({ length: n }, () => pitchJob(pitchWorker(), model)));
+      const workers = Array.from({ length: workerCount(navigator.hardwareConcurrency) }, pitchWorker);
+      try {
+        return await Promise.all(workers.map((w) => pitchJob(w, model)));
+      } catch (e) {
+        for (const w of workers) w.terminate();
+        throw e;
+      }
     },
     objectUrl: (bytes, type) => URL.createObjectURL(new Blob([bytes], { type })),
     download(url, fileName) {

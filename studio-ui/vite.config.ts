@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) =>
     ? {
         base: "./",
         publicDir: "public-web",
-        // es2022: the web backend opens IndexedDB with a top-level await.
+        // es2022: every browser the site supports (WebAssembly SIMD) has it.
         build: { outDir: "web-dist", emptyOutDir: true, target: "es2022" },
         worker: { format: "es" },
         resolve: {

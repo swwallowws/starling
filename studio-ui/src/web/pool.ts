@@ -8,6 +8,8 @@ const SHARES_PER_WORKER = 4;
 
 export interface PitchJob {
   run(audio16: Float32Array, indices: Uint32Array): Promise<Float32Array>;
+  /** Stop the worker behind this job (after a crash, the pool is replaced). */
+  dispose?(): void;
 }
 
 /** Split `active` into at most `parts` contiguous shares of whole batches (the last may be shorter). */

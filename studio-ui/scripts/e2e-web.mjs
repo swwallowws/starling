@@ -92,6 +92,17 @@ try {
   if ((await page.evaluate(() => document.body.dataset.analysis)) !== "cached") fail("reopening should use the cache");
   console.log("reopened from cache:", name);
   if (errors.length) fail(`page errors: ${errors.join("; ")}`);
+
+  // A browser without IndexedDB gets a plain message, not a blank page.
+  const bare = await browser.newPage();
+  await bare.evaluateOnNewDocument(() => {
+    delete window.indexedDB;
+  });
+  await bare.goto("http://localhost:4318/");
+  await bare
+    .waitForFunction(() => document.getElementById("message").textContent.includes("missing IndexedDB"), { timeout: 10000 })
+    .catch(() => fail("no unsupported-browser message without IndexedDB"));
+  console.log("unsupported browser: message shown");
   console.log("e2e ok");
 } finally {
   await browser.close();

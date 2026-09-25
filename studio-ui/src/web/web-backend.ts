@@ -22,25 +22,66 @@ export function createWebBackend(deps: WebDeps, canDragOut: boolean): Backend {
   let takeId = 0;
   let open: { name: string; audioUrl: string } | null = null;
   let jobs: Promise<PitchJob[]> | null = null;
+  /** Opens run one at a time: the studio worker holds a single take in progress. */
+  let queue: Promise<unknown> = Promise.resolve();
 
-  async function openStored(name: string, onProgress?: Progress): Promise<LoadResp> {
+  /** The pitch workers; a failed start is forgotten so the next open tries again. */
+  function pool(): Promise<PitchJob[]> {
+    if (!jobs) {
+      const started = deps.pitch();
+      jobs = started;
+      started.catch(() => {
+        if (jobs === started) jobs = null;
+      });
+    }
+    return jobs;
+  }
+
+  /** Stop and forget the pitch workers, so a crashed one is never reused. */
+  function dropPool() {
+    const old = jobs;
+    jobs = null;
+    old?.then((p) => p.forEach((j) => j.dispose?.()), () => {});
+  }
+
+  async function analyze(name: string, wav: ArrayBuffer, onProgress?: Progress): Promise<TakeInfo> {
+    const { audio16, active } = await deps.studio.load(name, wav);
+    const workers = await pool();
+    let results: Float32Array;
+    try {
+      results = await runShares(workers, audio16, shares(active, shareCount(workers.length)), onProgress ?? (() => {}));
+    } catch (e) {
+      dropPool();
+      throw e;
+    }
+    const done = await deps.studio.finish(results);
+    await deps.store.setFrames(name, done.frames);
+    return done.info;
+  }
+
+  async function openNow(name: string, onProgress?: Progress): Promise<LoadResp> {
     const stored = await deps.store.get(name);
     if (!stored) throw new ApiError(404, `no take named ${name}`);
-    let info: TakeInfo;
+    let info: TakeInfo | null = null;
     let cached = false;
     if (stored.frames) {
-      info = await deps.studio.restore(name, stored.wav, stored.frames);
-      cached = true;
-    } else {
-      const { audio16, active } = await deps.studio.load(name, stored.wav);
-      const pool = await (jobs ??= deps.pitch());
-      const results = await runShares(pool, audio16, shares(active, shareCount(pool.length)), onProgress ?? (() => {}));
-      const done = await deps.studio.finish(results);
-      await deps.store.setFrames(name, done.frames);
-      info = done.info;
+      try {
+        info = await deps.studio.restore(name, stored.wav, stored.frames);
+        cached = true;
+      } catch (e) {
+        // The engine refused the cache (damaged, or not from this WAV): analyze again.
+        if (!(e instanceof ApiError && e.status === 400)) throw e;
+      }
     }
+    info ??= await analyze(name, stored.wav, onProgress);
     open = { name, audioUrl: deps.objectUrl(stored.wav, "audio/wav") };
     return { take_id: ++takeId, info, cached };
+  }
+
+  function openStored(name: string, onProgress?: Progress): Promise<LoadResp> {
+    const run = queue.then(() => openNow(name, onProgress));
+    queue = run.catch(() => {});
+    return run;
   }
 
   const current = (id: number) => {

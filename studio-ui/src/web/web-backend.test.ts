@@ -89,6 +89,73 @@ describe("web backend", () => {
     expect((await deps.store.get("long.wav"))!.frames).toBeNull();
   });
 
+  it("re-analyzes a take whose cache the engine refuses", async () => {
+    const { backend, studio } = await setup();
+    await backend.uploadTake("a", new ArrayBuffer(8));
+    studio.restore = async () => {
+      throw new ApiError(400, "analysis cache does not match this take");
+    };
+    const r = await backend.openTake("a.wav");
+    expect(r.cached).toBe(false);
+    expect(studio.calls.slice(-2)).toEqual(["load a.wav", "finish 6"]);
+  });
+
+  it("tries starting the pitch workers again after a failed start", async () => {
+    const { backend, deps } = await setup();
+    const works = deps.pitch;
+    let first = true;
+    deps.pitch = vi.fn(async () => {
+      if (first) {
+        first = false;
+        throw new Error("could not download the pitch model (503)");
+      }
+      return works();
+    });
+    const e = await backend.uploadTake("a", new ArrayBuffer(8)).catch((x) => x);
+    expect(e.message).toContain("pitch model");
+    expect((await backend.openTake("a.wav")).info.name).toBe("a.wav");
+    expect(deps.pitch).toHaveBeenCalledTimes(2);
+  });
+
+  it("replaces the pitch workers after one crashes", async () => {
+    const { backend, deps } = await setup();
+    const disposed: number[] = [];
+    let pools = 0;
+    deps.pitch = vi.fn(async () => {
+      const k = ++pools;
+      return [
+        {
+          run: async (_a: Float32Array, idx: Uint32Array) => {
+            if (k === 1) throw new Error("worker died");
+            return new Float32Array(idx.length * 2);
+          },
+          dispose: () => disposed.push(k),
+        },
+      ];
+    });
+    const e = await backend.uploadTake("a", new ArrayBuffer(8)).catch((x) => x);
+    expect(e.message).toContain("worker died");
+    expect(disposed).toEqual([1]);
+    expect((await backend.openTake("a.wav")).cached).toBe(false);
+    expect(deps.pitch).toHaveBeenCalledTimes(2);
+  });
+
+  it("runs one open at a time", async () => {
+    const { backend, studio } = await setup();
+    // A slow first load, so a second open would overlap it without a queue.
+    const load = studio.load;
+    studio.load = async (name, wav) => {
+      if (name === "a.wav") await new Promise((r) => setTimeout(r, 20));
+      return load(name, wav);
+    };
+    const [a, b] = await Promise.all([
+      backend.uploadTake("a", new ArrayBuffer(8)),
+      backend.uploadTake("b", new ArrayBuffer(8)),
+    ]);
+    expect(studio.calls).toEqual(["load a.wav", "finish 6", "load b.wav", "finish 6"]);
+    expect(b.take_id).toBeGreaterThan(a.take_id);
+  });
+
   it("deletes takes and declares its abilities", async () => {
     const { backend } = await setup();
     await backend.uploadTake("a", new ArrayBuffer(8));

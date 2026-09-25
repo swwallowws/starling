@@ -161,6 +161,31 @@ fn frames_survive_encoding() {
     assert!(format!("{}", decode_frames(&[0.01, 1.0]).unwrap_err()).contains("damaged"));
 }
 
+/// A cache that decodes but was not made from this WAV (another take, or an
+/// old encoding) must be refused, so the page re-analyzes instead of rendering
+/// wrong notes.
+#[test]
+fn a_cache_that_does_not_match_the_take_is_refused() {
+    let short = Frames {
+        hop_s: 0.01,
+        frames: vec![
+            Frame {
+                time: 0.0,
+                f0_hz: 440.0,
+                confidence: 0.9,
+                rms: 0.2,
+                centroid_hz: 900.0,
+                voiced: true,
+            };
+            3
+        ],
+    };
+    let err = Engine::new()
+        .restore("phrase", phrase(), &encode_frames(&short))
+        .unwrap_err();
+    assert!(format!("{err}").contains("does not match"), "{err}");
+}
+
 #[test]
 fn takes_over_ten_minutes_are_refused() {
     let long = vec![0.0f32; (8_000.0 * (MAX_SECONDS + 1.0)) as usize];

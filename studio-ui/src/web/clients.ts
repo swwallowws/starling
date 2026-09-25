@@ -54,5 +54,8 @@ export function studioClient(worker: Worker): StudioClient {
 export async function pitchJob(worker: Worker, model: ArrayBuffer): Promise<PitchJob> {
   const call = rpc(worker);
   await call("init", [model.slice(0)]);
-  return { run: (audio16, indices) => call("run", [audio16, indices]) };
+  return {
+    run: (audio16, indices) => call("run", [audio16, indices]),
+    dispose: () => worker.terminate(),
+  };
 }

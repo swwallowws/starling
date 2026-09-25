@@ -25,11 +25,12 @@ export function say(text: string) {
   $("message").textContent = text;
 }
 
+/** The browser build can't run here (missing SIMD, workers or IndexedDB). */
+const unsupported = api.kind === "web" && missingFeatures().length > 0;
 if (api.kind === "web") {
   $("privacy").hidden = false;
-  const missing = missingFeatures();
-  if (missing.length) {
-    say(`This browser is missing ${missing.join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
+  if (unsupported) {
+    say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
     for (const id of ["record", "takes"]) $<HTMLButtonElement>(id).disabled = true;
   }
 }
@@ -404,7 +405,8 @@ $("delete-take").addEventListener("click", async () => {
 });
 
 // Show a take the studio was started with (`voxmpe studio take.wav`), else just list takes.
-api
+// An unsupported browser keeps its message instead.
+if (!unsupported) api
   .currentTake()
   .then((r) => (r ? opened(r) : refreshTakes()))
   .catch((e) => {

@@ -100,8 +100,17 @@ impl Engine {
     }
 
     /// Reopen a take from its cached analysis. Returns the take info as JSON.
+    /// A cache with the wrong frame count or hop was not made from this WAV
+    /// and is refused, so the page analyzes the take again.
     pub fn restore(&mut self, name: &str, wav: Vec<u8>, frames: &[f32]) -> Result<String> {
-        self.open(Session::from_frames(name, wav, decode_frames(frames)?)?)
+        let frames = decode_frames(frames)?;
+        let (audio, sample_rate) = voxmpe::audio::decode_wav(&wav)?;
+        let expected = pitch::prepare(&audio, sample_rate, f32::INFINITY).n_frames;
+        let hop = pitch::HOP as f32 / pitch::CREPE_SR as f32;
+        if frames.frames.len() != expected || (frames.hop_s - hop).abs() > 1e-6 {
+            bail!("analysis cache does not match this take");
+        }
+        self.open(Session::from_frames(name, wav, frames)?)
     }
 
     fn open(&mut self, s: Session) -> Result<String> {
