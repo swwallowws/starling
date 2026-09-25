@@ -5,7 +5,7 @@
 //! mean/std normalization. Decodes the 360-bin activation into f0 via a local
 //! weighted average of cents around the argmax bin.
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use tract_onnx::prelude::*;
 
 use crate::resample::resample;
@@ -36,6 +36,58 @@ pub struct RawPitch {
     pub confidence: f32,
 }
 
+/// The cheap first step of pitch tracking: the audio at 16 kHz, how many
+/// frames it has, and which frames are loud enough to analyze.
+#[derive(Debug, Clone)]
+pub struct Prepared {
+    pub audio16: Vec<f32>,
+    pub n_frames: usize,
+    /// Frames whose RMS reaches the floor, ascending.
+    pub active: Vec<u32>,
+}
+
+/// Resample and list the frames worth analyzing. Frames below `rms_floor`
+/// come back from [`assemble`] as f0 0, confidence 0.
+pub fn prepare(audio: &[f32], sample_rate: u32, rms_floor: f32) -> Prepared {
+    let audio16 = resample(audio, sample_rate, CREPE_SR);
+    let padded = pad(&audio16);
+    let n_frames = frame_count(padded.len());
+    let active = (0..n_frames)
+        .filter(|&i| frame_rms(&padded, i) >= rms_floor)
+        .map(|i| i as u32)
+        .collect();
+    Prepared {
+        audio16,
+        n_frames,
+        active,
+    }
+}
+
+/// Put `results` (one per `active` frame, same order) back in frame order;
+/// frames not in `active` are unvoiced.
+pub fn assemble(n_frames: usize, active: &[u32], results: &[(f32, f32)]) -> Result<Vec<RawPitch>> {
+    if active.len() != results.len() {
+        bail!("{} results for {} frames", results.len(), active.len());
+    }
+    let mut all = vec![(0.0f32, 0.0f32); n_frames];
+    for (&i, &r) in active.iter().zip(results) {
+        let slot = all
+            .get_mut(i as usize)
+            .with_context(|| format!("frame {i} out of range ({n_frames} frames)"))?;
+        *slot = r;
+    }
+    let hop_s = HOP as f32 / CREPE_SR as f32;
+    Ok(all
+        .into_iter()
+        .enumerate()
+        .map(|(i, (f0_hz, confidence))| RawPitch {
+            time: i as f32 * hop_s,
+            f0_hz,
+            confidence,
+        })
+        .collect())
+}
+
 /// CREPE cents (relative to a 10 Hz reference) -> Hz. Folded onto the shared
 /// [`crate::interval`] anchor math rather than duplicating the 2^(c/1200) form.
 #[inline]
@@ -45,9 +97,22 @@ fn cents_to_hz(cents: f32) -> f32 {
 
 impl CrepeModel {
     pub fn from_path(path: &str) -> Result<Self> {
-        let plan = tract_onnx::onnx()
+        let model = tract_onnx::onnx()
             .model_for_path(path)
-            .with_context(|| format!("loading CREPE ONNX from {path}"))?
+            .with_context(|| format!("loading CREPE ONNX from {path}"))?;
+        Self::from_model(model)
+    }
+
+    /// Load from ONNX bytes (the browser fetches the model instead of reading a file).
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        let model = tract_onnx::onnx()
+            .model_for_read(&mut std::io::Cursor::new(bytes))
+            .context("loading CREPE ONNX from bytes")?;
+        Self::from_model(model)
+    }
+
+    fn from_model(model: InferenceModel) -> Result<Self> {
+        let plan = model
             .with_input_fact(0, f32::fact([BATCH, WINDOW]).into())?
             .into_optimized()?
             .into_runnable()?;
@@ -70,44 +135,45 @@ impl CrepeModel {
         sample_rate: u32,
         rms_floor: f32,
     ) -> Result<Vec<RawPitch>> {
-        let audio16 = resample(audio, sample_rate, CREPE_SR);
-        let (frames, rms) = frame_and_normalize(&audio16);
-        let n = frames.len();
-        if n == 0 {
+        let prep = prepare(audio, sample_rate, rms_floor);
+        if prep.n_frames == 0 {
             return Ok(vec![]);
         }
-        let active: Vec<usize> = (0..n).filter(|&i| rms[i] >= rms_floor).collect();
-        let frames: Vec<[f32; WINDOW]> = active.iter().map(|&i| frames[i]).collect();
-
-        // Frames are independent, so batches run in parallel: split the batch
-        // list into one contiguous chunk per core and decode in place.
-        let mut decoded = vec![(0.0f32, 0.0f32); frames.len()];
+        // Frames are independent, so shares run in parallel: one contiguous
+        // share of the active frames per core, each a whole number of batches.
         let threads = std::thread::available_parallelism().map_or(1, |p| p.get());
-        let per_thread = n.div_ceil(BATCH).div_ceil(threads) * BATCH;
-        std::thread::scope(|s| {
-            let jobs: Vec<_> = frames
+        let per_thread = prep.active.len().div_ceil(BATCH).div_ceil(threads).max(1) * BATCH;
+        let results = std::thread::scope(|s| {
+            let jobs: Vec<_> = prep
+                .active
                 .chunks(per_thread)
-                .zip(decoded.chunks_mut(per_thread))
-                .map(|(fr, out)| s.spawn(move || self.run_batches(fr, out)))
+                .map(|idx| {
+                    let audio16 = &prep.audio16;
+                    s.spawn(move || self.pitch_frames(audio16, idx))
+                })
                 .collect();
             jobs.into_iter()
-                .try_for_each(|j| j.join().expect("pitch worker panicked"))
+                .map(|j| j.join().expect("pitch worker panicked"))
+                .collect::<Result<Vec<_>>>()
         })?;
+        assemble(prep.n_frames, &prep.active, &results.concat())
+    }
 
-        let mut all = vec![(0.0f32, 0.0f32); n];
-        for (&i, d) in active.iter().zip(decoded) {
-            all[i] = d;
+    /// The slow step: `(f0_hz, confidence)` for each frame in `indices`, from
+    /// the 16 kHz audio `prepare` returned. Workers each run a share.
+    pub fn pitch_frames(&self, audio16: &[f32], indices: &[u32]) -> Result<Vec<(f32, f32)>> {
+        let padded = pad(audio16);
+        let n = frame_count(padded.len());
+        if let Some(&bad) = indices.iter().find(|&&i| i as usize >= n) {
+            bail!("frame {bad} out of range ({n} frames)");
         }
-        let hop_s = HOP as f32 / CREPE_SR as f32;
-        Ok(all
-            .into_iter()
-            .enumerate()
-            .map(|(i, (f0_hz, confidence))| RawPitch {
-                time: i as f32 * hop_s,
-                f0_hz,
-                confidence,
-            })
-            .collect())
+        let frames: Vec<[f32; WINDOW]> = indices
+            .iter()
+            .map(|&i| normalized_frame(&padded, i as usize))
+            .collect();
+        let mut out = vec![(0.0f32, 0.0f32); frames.len()];
+        self.run_batches(&frames, &mut out)?;
+        Ok(out)
     }
 
     /// Run `frames` through the model in fixed-size batches, writing
@@ -155,37 +221,44 @@ fn decode_row(row: &[f32]) -> (f32, f32) {
     (cents_to_hz(cents), peak)
 }
 
-/// Frame 16 kHz mono audio into normalized 1024-sample frames (centered, 10 ms
-/// hop), plus each frame's RMS before normalization.
-fn frame_and_normalize(audio16: &[f32]) -> (Vec<[f32; WINDOW]>, Vec<f32>) {
+/// Center-pad 16 kHz audio with zeros so frame `i` (1024 samples, 10 ms hop)
+/// starts at `i * HOP`.
+fn pad(audio16: &[f32]) -> Vec<f32> {
     let pad = WINDOW / 2;
     // Center padding (zeros), matching torch F.pad.
     let mut padded = vec![0.0f32; audio16.len() + 2 * pad];
     padded[pad..pad + audio16.len()].copy_from_slice(audio16);
+    padded
+}
 
-    if padded.len() < WINDOW {
-        return (vec![], vec![]);
+/// Frames in a padded buffer (centered, 10 ms hop).
+fn frame_count(padded_len: usize) -> usize {
+    if padded_len < WINDOW {
+        0
+    } else {
+        (padded_len - WINDOW) / HOP + 1
     }
-    let n_frames = (padded.len() - WINDOW) / HOP + 1;
-    let mut frames = Vec::with_capacity(n_frames);
-    let mut rms = Vec::with_capacity(n_frames);
-    for f in 0..n_frames {
-        let start = f * HOP;
-        let mut frame = [0.0f32; WINDOW];
-        frame.copy_from_slice(&padded[start..start + WINDOW]);
-        rms.push((frame.iter().map(|s| s * s).sum::<f32>() / WINDOW as f32).sqrt());
-        // per-frame mean/std normalization
-        let mean = frame.iter().sum::<f32>() / WINDOW as f32;
-        let mut var = 0.0f32;
-        for v in &mut frame {
-            *v -= mean;
-            var += *v * *v;
-        }
-        let std = (var / WINDOW as f32).sqrt().max(1e-10);
-        for v in &mut frame {
-            *v /= std;
-        }
-        frames.push(frame);
+}
+
+/// Frame `i`'s RMS before normalization.
+fn frame_rms(padded: &[f32], i: usize) -> f32 {
+    let frame = &padded[i * HOP..i * HOP + WINDOW];
+    (frame.iter().map(|s| s * s).sum::<f32>() / WINDOW as f32).sqrt()
+}
+
+/// Frame `i`, normalized to zero mean and unit standard deviation.
+fn normalized_frame(padded: &[f32], i: usize) -> [f32; WINDOW] {
+    let mut frame = [0.0f32; WINDOW];
+    frame.copy_from_slice(&padded[i * HOP..i * HOP + WINDOW]);
+    let mean = frame.iter().sum::<f32>() / WINDOW as f32;
+    let mut var = 0.0f32;
+    for v in &mut frame {
+        *v -= mean;
+        var += *v * *v;
     }
-    (frames, rms)
+    let std = (var / WINDOW as f32).sqrt().max(1e-10);
+    for v in &mut frame {
+        *v /= std;
+    }
+    frame
 }

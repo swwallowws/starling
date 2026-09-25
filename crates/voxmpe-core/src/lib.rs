@@ -59,6 +59,17 @@ pub fn track(
     cfg: &AnalysisConfig,
 ) -> Result<Frames> {
     let raw = model.track_gated(audio, sample_rate, cfg.segmentation.rms_floor)?;
+    Ok(frames_from_raw(&raw, audio, sample_rate, cfg))
+}
+
+/// The rest of [`track`] once raw pitch is known (natively, or assembled from
+/// browser pitch workers): per-frame loudness and centroid, and the voicing gate.
+pub fn frames_from_raw(
+    raw: &[pitch::RawPitch],
+    audio: &[f32],
+    sample_rate: u32,
+    cfg: &AnalysisConfig,
+) -> Frames {
     let hop_s = pitch::HOP as f32 / pitch::CREPE_SR as f32;
     let feats = features::extract(audio, sample_rate, raw.len());
     let mut frames: Vec<Frame> = raw
@@ -74,7 +85,7 @@ pub fn track(
         })
         .collect();
     apply_voicing(&mut frames, &cfg.segmentation);
-    Ok(Frames { frames, hop_s })
+    Frames { frames, hop_s }
 }
 
 /// Fast stage: voicing gate, segmentation and expression for `cfg`. Milliseconds.
