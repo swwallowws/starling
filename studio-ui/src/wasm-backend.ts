@@ -5,8 +5,9 @@ import { workerCount } from "./web/pool";
 import { openTakeStore } from "./web/take-store";
 import { createWebBackend } from "./web/web-backend";
 
-/** From the drag-out check (plan Task 1): does Chrome drag a blob: DownloadURL out? */
-const CAN_DRAG_OUT = true;
+/** Chrome does not drag a blob: DownloadURL out of the page (checked 2026-09-25),
+ *  so the browser build saves by download only. */
+const CAN_DRAG_OUT = false;
 
 const studioWorker = () => new Worker(new URL("./web/workers/studio.worker.ts", import.meta.url), { type: "module" });
 const pitchWorker = () => new Worker(new URL("./web/workers/pitch.worker.ts", import.meta.url), { type: "module" });
