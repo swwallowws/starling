@@ -31,7 +31,7 @@ if (api.kind === "web") {
   $("privacy").hidden = false;
   if (unsupported) {
     say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
-    for (const id of ["record", "takes", "empty-record", "empty-open"]) $<HTMLButtonElement>(id).disabled = true;
+    for (const id of ["record", "takes"]) $<HTMLButtonElement>(id).disabled = true;
   }
 }
 
@@ -381,10 +381,6 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
     say((err as Error).message);
   }
 });
-
-// The empty roll's prompt: the same two ways in as the header.
-$("empty-record").addEventListener("click", () => void toggleRecord());
-$("empty-open").addEventListener("click", () => wavFile.click());
 
 $("delete-take").addEventListener("click", async () => {
   const name = app.info?.name;

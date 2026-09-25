@@ -8,6 +8,10 @@ import type { RNote, TakeInfo } from "./types";
 export const LOUDNESS_LANE = 48;
 const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+/** Pitch line widths (px): the MIDI pitch reads first, the sung contour behind it. */
+const MIDI_LINE = 2;
+const SUNG_LINE = 1.5;
+
 /** Rows at least this tall get every note named, not just the Cs. */
 const NAME_EVERY_ROW = 14;
 
@@ -63,10 +67,11 @@ export function drawRoll(
     }
   }
 
-  // Raw sung contour: 1px --ink-mut at 50%.
+  // Raw sung contour: --ink-mut at 50%, thinner than the MIDI pitch line.
   g.strokeStyle = c.mut;
   g.globalAlpha = 0.5;
-  g.lineWidth = 1;
+  g.lineWidth = SUNG_LINE;
+  g.lineJoin = "round";
   g.beginPath();
   let pen = false;
   plausibleContour(info.contour, info.hop_s, notes).forEach((pc, i) => {
@@ -78,6 +83,7 @@ export function drawRoll(
   });
   g.stroke();
   g.globalAlpha = 1;
+  g.lineWidth = 1;
 
   // Notes: tints of the accent; the sounding note is full accent with an ink outline.
   const noteH = Math.max(2, row - 1);
@@ -103,8 +109,9 @@ export function drawRoll(
       g.fillStyle = c.ink;
       g.fillRect(x0, y - 7, 2, 6);
     }
-    // Bend curve: 1px ink through the note.
+    // Bend curve (the MIDI pitch): ink through the note.
     if (n.bend.length > 1) {
+      g.lineWidth = MIDI_LINE;
       g.beginPath();
       n.bend.forEach(([t, st], i) => {
         const bx = timeToX(v, t);
@@ -112,6 +119,7 @@ export function drawRoll(
         if (i) g.lineTo(bx, by); else g.moveTo(bx, by);
       });
       g.stroke();
+      g.lineWidth = 1;
     }
   }
 

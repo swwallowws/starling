@@ -15,8 +15,13 @@ mkdirSync(dir, { recursive: true });
 const wavPath = join(dir, "e2e phrase.wav");
 writeFileSync(wavPath, wav16(phrase(44100), 44100));
 
-const server = spawn("npx", ["vite", "preview", "--mode", "web", "--port", "4318", "--strictPort"], { stdio: "pipe" });
-await new Promise((ok) => server.stdout.on("data", (d) => String(d).includes("4318") && ok()));
+// Its own port, so a running `npm run preview:web` (4318) doesn't collide.
+const PORT = "4328";
+const server = spawn("npx", ["vite", "preview", "--mode", "web", "--port", PORT, "--strictPort"], { stdio: "pipe" });
+await new Promise((ok, no) => {
+  server.stdout.on("data", (d) => String(d).includes(PORT) && ok());
+  server.on("exit", (code) => no(new Error(`preview server exited (${code}); is port ${PORT} in use?`)));
+});
 const fail = (msg) => {
   console.error(`e2e failed: ${msg}`);
   server.kill();
@@ -34,7 +39,7 @@ try {
   page.on("response", (r) => r.status() >= 400 && logs.push(`${r.status()}: ${r.url()}`));
   const cdp = await page.createCDPSession();
   await cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: dir });
-  await page.goto("http://localhost:4318/");
+  await page.goto(`http://localhost:${PORT}/`);
   // The page is ready once startup has filled the take picker (the web backend
   // opens IndexedDB with a top-level await, after the load event).
   await page.waitForFunction(() => document.querySelectorAll("#takes option").length >= 2, { timeout: 20000 });
@@ -98,7 +103,7 @@ try {
   await bare.evaluateOnNewDocument(() => {
     delete window.indexedDB;
   });
-  await bare.goto("http://localhost:4318/");
+  await bare.goto(`http://localhost:${PORT}/`);
   await bare
     .waitForFunction(() => document.getElementById("message").textContent.includes("missing IndexedDB"), { timeout: 10000 })
     .catch(() => fail("no unsupported-browser message without IndexedDB"));
