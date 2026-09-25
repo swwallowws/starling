@@ -31,7 +31,7 @@ if (api.kind === "web") {
   $("privacy").hidden = false;
   if (unsupported) {
     say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
-    for (const id of ["record", "takes"]) $<HTMLButtonElement>(id).disabled = true;
+    for (const id of ["record", "takes", "empty-record", "empty-open"]) $<HTMLButtonElement>(id).disabled = true;
   }
 }
 
@@ -339,6 +339,7 @@ export async function opened(r: LoadResp) {
   app.info = r.info;
   say(r.info.warning ?? `${r.info.name}: ${r.info.duration_s.toFixed(1)} s`);
   document.body.dataset.analysis = r.cached ? "cached" : "fresh";
+  $("empty").hidden = true;
   $("delete-take").hidden = !api.canDelete;
   await refreshTakes(r.info.name);
   player.stop();
@@ -381,6 +382,10 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
   }
 });
 
+// The empty roll's prompt: the same two ways in as the header.
+$("empty-record").addEventListener("click", () => void toggleRecord());
+$("empty-open").addEventListener("click", () => wavFile.click());
+
 $("delete-take").addEventListener("click", async () => {
   const name = app.info?.name;
   if (!name || !confirm(`Delete ${name} from this browser?`)) return;
@@ -398,6 +403,7 @@ $("delete-take").addEventListener("click", async () => {
   const roll = $<HTMLCanvasElement>("roll");
   roll.getContext("2d")?.clearRect(0, 0, roll.width, roll.height);
   $("delete-take").hidden = true;
+  $("empty").hidden = false;
   $("note-count").textContent = "";
   updateDrag();
   say(`Deleted ${name}.`);

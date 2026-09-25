@@ -16,6 +16,13 @@ function setup() {
 }
 
 describe("controls", () => {
+  it("heads both groups, and keeps the accent off the 'off' label", () => {
+    const { root } = setup();
+    expect([...root.querySelectorAll("h3")].map((h) => h.textContent)).toEqual(["Note splits", "Expression"]);
+    const off = [...root.querySelectorAll("label > span")].find((s) => s.textContent?.includes("off"))!;
+    expect(off.classList.contains("plain")).toBe(true);
+  });
+
   it("moving a slider keeps a tuning loaded elsewhere", () => {
     const { root, store } = setup();
     const hold = root.querySelector<HTMLInputElement>('input[type="range"]')!;

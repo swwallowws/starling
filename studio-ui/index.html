@@ -3,29 +3,41 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>voxmpe studio</title>
+    <title>voxMPE studio</title>
   </head>
   <body>
     <header class="bar">
-      <strong>voxmpe</strong>
-      <button id="record">Record</button>
-      <input id="take-name" aria-label="Name for the next recording" />
-      <span id="rec-status"></span>
-      <select id="takes" aria-label="Open a take"></select>
-      <button id="delete-take" hidden title="Delete this take from the browser">Delete</button>
-      <label>Tuning <select id="tuning"></select></label>
-      <input id="scl-file" type="file" accept=".scl" hidden />
-      <input id="wav-file" type="file" accept=".wav,audio/wav" hidden />
-      <label>Anchor <select id="anchor"></select></label>
-      <input id="anchor-custom" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
-      <span id="tuning-error" class="error" role="alert"></span>
-      <span id="note-count"></span>
-      <button id="fit" hidden title="Show the whole take (double-click the roll, or press 0)">Fit</button>
+      <strong class="wordmark">voxMPE</strong>
+      <span class="group" aria-label="Take">
+        <button id="record">Record</button>
+        <input id="take-name" aria-label="Name for the next recording" />
+        <span id="rec-status"></span>
+        <select id="takes" aria-label="Open a take"></select>
+        <button id="delete-take" hidden title="Delete this take from the browser">Delete</button>
+      </span>
+      <span class="group" aria-label="Tuning">
+        <label>Tuning <select id="tuning"></select></label>
+        <input id="scl-file" type="file" accept=".scl" hidden />
+        <input id="wav-file" type="file" accept=".wav,audio/wav" hidden />
+        <label>Anchor <select id="anchor"></select></label>
+        <input id="anchor-custom" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
+        <span id="tuning-error" class="error" role="alert"></span>
+      </span>
+      <span class="group" aria-label="Status">
+        <span id="note-count"></span>
+        <button id="fit" hidden title="Show the whole take (double-click the roll, or press 0)">Fit</button>
+      </span>
     </header>
     <p id="message" class="message" role="status"></p>
-    <p id="privacy" class="message" hidden>Your recordings stay in this browser and are never uploaded.</p>
     <main>
-      <canvas id="roll"></canvas>
+      <div class="stage">
+        <canvas id="roll"></canvas>
+        <div id="empty" class="empty">
+          <p>Record or open a take</p>
+          <button id="empty-record">Record</button>
+          <button id="empty-open">Open WAV</button>
+        </div>
+      </div>
       <aside id="controls"></aside>
     </main>
     <footer class="bar">
@@ -51,6 +63,7 @@
         <span class="ln mut"></span> sung pitch
         <span>pinch or ⌘+scroll to zoom, drag to pan</span>
       </span>
+      <span id="privacy" class="fine" hidden>Your recordings stay in this browser and are never uploaded.</span>
     </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>

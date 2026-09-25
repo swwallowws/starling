@@ -4,11 +4,22 @@
 body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; display: grid; grid-template-rows: auto auto 1fr auto; height: 100vh; }
 .bar { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; padding: var(--space) calc(var(--space) * 2); background: var(--ground-2); border-bottom: var(--hairline); }
 footer.bar { border-top: var(--hairline); border-bottom: 0; }
+/* Headline style from the design system: Archivo at full width, heaviest weight, tight. */
+.wordmark { font-size: 18px; font-weight: 800; font-stretch: 125%; letter-spacing: -0.02em; margin-right: var(--space); }
+/* Header groups (take, tuning, status), divided by hairlines. */
+.group { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; padding-left: calc(var(--space) * 2); border-left: var(--hairline); }
+header select { width: 14em; }
 main { display: grid; grid-template-columns: 1fr 300px; min-height: 0; }
+.stage { position: relative; min-height: 0; }
 #roll { width: 100%; height: 100%; display: block; }
+.empty { position: absolute; inset: 0; display: flex; gap: var(--space); align-items: center; justify-content: center; color: var(--ink-mut); }
+.empty[hidden] { display: none; }
+.empty p { margin: 0 var(--space) 0 0; }
+.fine { font-size: 12px; color: var(--ink-mut); }
 #controls { padding: calc(var(--space) * 2); border-left: var(--hairline); overflow: auto; font-size: 13px; }
 #controls label { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2); margin-bottom: calc(var(--space) * 2); }
 #controls label > span { color: var(--acc); }
+#controls label > span.plain { color: var(--ink); }
 #controls code { font-family: var(--font-mono); font-size: 12px; word-break: break-all; }
 button, select, input[type="text"], input[type="number"] { font: inherit; color: var(--ink); background: var(--ground-2); border: var(--hairline); border-radius: var(--radius); padding: calc(var(--space) / 2) var(--space); }
 button { cursor: pointer; }
@@ -25,6 +36,7 @@ input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: v
 input[type="range"]:disabled { opacity: 0.4; }
 .error { color: var(--ink); font-weight: 600; }
 #controls h3 { font-size: 13px; font-weight: 600; margin: calc(var(--space) * 2) 0 var(--space); color: var(--ink-mut); }
+#controls h3:first-child { margin-top: 0; }
 .legend { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; margin-left: auto; color: var(--ink-mut); font-size: 12px; }
 .legend .mk, .legend .ln { display: inline-block; }
 .legend .mk.tick { width: 2px; height: 8px; background: var(--ink); }

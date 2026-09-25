@@ -2,6 +2,7 @@ import { cssColor } from "../vendor/design/tokens.js";
 import { isBlackKey, noteStrength, tint } from "./colors";
 import { fitView, pitchToY, timeToX, type View } from "./coords";
 import { clampWin, type Win } from "./zoom";
+import { plausibleContour } from "./contour";
 import type { RNote, TakeInfo } from "./types";
 
 export const LOUDNESS_LANE = 48;
@@ -68,7 +69,7 @@ export function drawRoll(
   g.lineWidth = 1;
   g.beginPath();
   let pen = false;
-  info.contour.forEach((pc, i) => {
+  plausibleContour(info.contour, info.hop_s, notes).forEach((pc, i) => {
     if (pc === null) { pen = false; return; }
     const x = timeToX(v, i * info.hop_s);
     const y = pitchToY(v, pc);

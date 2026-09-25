@@ -39,6 +39,7 @@ const segmentation = (s: Partial<Settings>): Partial<Settings> => ({
 export function buildControls(root: HTMLElement, store: SettingsStore) {
   root.innerHTML = "";
   const inputs = new Map<NumKey, [HTMLInputElement, HTMLElement]>();
+  root.append(Object.assign(document.createElement("h3"), { textContent: "Note splits" }));
 
   for (const d of SLIDERS) {
     const label = document.createElement("label");
@@ -56,7 +57,8 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
   const onsetOff = Object.assign(document.createElement("input"), { type: "checkbox" });
   onsetRange.addEventListener("input", () => store.patch({ onset_delta: Number(onsetRange.value) }));
   onsetOff.addEventListener("change", () => store.patch({ onset_delta: onsetOff.checked ? null : Number(onsetRange.value) }));
-  const offLabel = document.createElement("span");
+  // Plain ink: the accent is for current values, and "off" is a choice, not a value.
+  const offLabel = Object.assign(document.createElement("span"), { className: "plain" });
   offLabel.append(onsetOff, " off");
   onset.append("Loudness re-attack", onsetVal, onsetRange, offLabel);
   root.append(onset);
