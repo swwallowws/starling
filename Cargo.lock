@@ -1981,6 +1981,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "voxmpe-web"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "hound",
+ "serde_json",
+ "voxmpe",
+ "voxmpe-core",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "walkdir"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

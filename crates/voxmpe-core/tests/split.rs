@@ -40,7 +40,10 @@ fn any_split_equals_native_track() {
     let native = track(&audio, SR, &model, &cfg).unwrap();
     let prep = pitch::prepare(&audio, SR, cfg.segmentation.rms_floor);
     assert_eq!(prep.n_frames, native.frames.len());
-    assert!(prep.active.len() < prep.n_frames, "the gap leaves frames out");
+    assert!(
+        prep.active.len() < prep.n_frames,
+        "the gap leaves frames out"
+    );
     for shares in [1, 3, 7] {
         let size = prep.active.len().div_ceil(shares);
         let mut results = Vec::new();

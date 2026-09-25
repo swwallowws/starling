@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/voxmpe-core", "crates/voxmpe"]
+members = ["crates/voxmpe-core", "crates/voxmpe", "crates/voxmpe-web"]
 resolver = "2"
 
 # Optimize dependencies (notably tract) even in dev/test builds so CREPE

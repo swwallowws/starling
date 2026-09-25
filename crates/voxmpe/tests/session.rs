@@ -239,6 +239,12 @@ fn a_session_from_frames_matches_a_loaded_one() {
         serde_json::to_string(&loaded.info()).unwrap(),
         serde_json::to_string(&rebuilt.info()).unwrap()
     );
-    assert_eq!(loaded.export_mid(&s).unwrap(), rebuilt.export_mid(&s).unwrap());
-    assert_eq!(loaded.export_als(&s).unwrap(), rebuilt.export_als(&s).unwrap());
+    assert_eq!(
+        loaded.export_mid(&s).unwrap(),
+        rebuilt.export_mid(&s).unwrap()
+    );
+    assert_eq!(
+        loaded.export_als(&s).unwrap(),
+        rebuilt.export_als(&s).unwrap()
+    );
 }
