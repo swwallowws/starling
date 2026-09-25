@@ -14,6 +14,7 @@
     "preview:web": "vite preview --mode web --port 4318 --strictPort"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^26.1.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
