@@ -11,11 +11,13 @@
     "build:wasm": "wasm-pack build ../crates/voxmpe-web --release --target web --out-dir ../../studio-ui/src/wasm-pkg --out-name voxmpe_web",
     "build:web": "npm run build:wasm && node scripts/copy-model.mjs && tsc --noEmit -p tsconfig.web.json && vite build --mode web",
     "smoke:wasm": "node scripts/wasm-smoke.mjs",
-    "preview:web": "vite preview --mode web --port 4318 --strictPort"
+    "preview:web": "vite preview --mode web --port 4318 --strictPort",
+    "e2e:web": "node scripts/e2e-web.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^26.1.0",
+    "puppeteer-core": "^23.11.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vitest": "^3.0.0"
