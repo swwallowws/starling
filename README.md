@@ -14,6 +14,19 @@ Opens a local page where you record (or open) a take, move the note-split settin
 
 The studio's "Copy as flags" gives the exact flags for the settings you chose.
 
+## Browser studio
+
+The same studio, running entirely in the browser with CREPE tiny (2 MB): no
+install, recordings kept in the browser.
+
+    python scripts/export_crepe.py tiny     # once: models/crepe-tiny.onnx
+    cd studio-ui && npm run build:web       # site in studio-ui/web-dist
+    npm run preview:web                     # try it at http://localhost:4318
+    npm run e2e:web                         # headless Chrome check
+
+`scripts/deploy-web.sh --stage DIR` stages the site; `--push CHECKOUT` publishes
+it to a clone of `swwallowws/voxmpe-web` (GitHub Pages).
+
 ## Setup
 
 1. Get the CREPE model: see `models/README.md`.
@@ -24,4 +37,5 @@ The studio's "Copy as flags" gives the exact flags for the settings you chose.
 
 - `crates/voxmpe-core`: the engine library (pitch tracking, segmentation, MPE MIDI writer).
 - `crates/voxmpe`: the app (studio, CLI, Scala tuning).
-- `studio-ui`: the studio's browser UI.
+- `crates/voxmpe-web`: the engine for the browser studio's Web Workers.
+- `studio-ui`: the studio's browser UI, for both the local and the browser studio.

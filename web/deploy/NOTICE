@@ -1,0 +1,6 @@
+Third-party components in this site
+
+CREPE pitch model: Copyright (c) 2018 Jong Wook Kim et al., MIT License.
+torchcrepe (model export): Copyright (c) 2020 Max Morrison, MIT License.
+
+Rust crates compiled into voxmpe_web_bg.wasm (name version license):
