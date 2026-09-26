@@ -4,6 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>voxMPE studio</title>
+    <script>
+      // For framing (the showcase site): ?theme=paper|night picks the mode
+      // before first paint, otherwise the system scheme applies; ?embed=1
+      // drops the page's own wordmark, since the framing page names the tool.
+      (function () {
+        var q = new URLSearchParams(location.search);
+        var t = q.get("theme");
+        if (t === "paper" || t === "night") document.documentElement.dataset.theme = t;
+        if (q.get("embed") === "1") document.documentElement.classList.add("embed");
+      })();
+    </script>
   </head>
   <body>
     <header class="bar">
