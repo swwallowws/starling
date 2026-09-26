@@ -40,10 +40,10 @@ history needs rewriting.
 - [x] `.gitignore` covers `takes/`, `models/*.onnx`, build output, and now also a
   safety net for audio, MIDI, `.als` and weight files anywhere, plus
   `node_modules/`, `.venv/`, `__pycache__/`, `.claude/` and `.superpowers/`.
-- [ ] **`web/deploy/LICENSE` says "All rights reserved"** (added in `b42a4fc`). It
-  is the licence file `scripts/deploy-web.sh` copies into the public
-  `voxmpe-web` site repo, and it contradicts the new MIT licence. Decide whether
-  the next deploy should carry MIT instead.
+- [x] **`web/deploy/LICENSE` now carries MIT** (it said "All rights reserved"
+  since `b42a4fc`). `scripts/deploy-web.sh` copies it into the public
+  `voxmpe-web` site repo, so the live site keeps the old text until the next
+  deploy.
 - [ ] **Stale privacy notes in the plans.**
   `docs/superpowers/plans/2026-09-25-voxmpe-web.md` line 22 says "The voxmpe
   source stays private" and line 2693 quotes the "All rights reserved" line
