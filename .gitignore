@@ -6,6 +6,27 @@
 # Built studio UI, embedded at compile time.
 /crates/voxmpe/ui-dist
 .DS_Store
+# Safety net: audio, MIDI and model weights anywhere in the tree stay local.
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.aif
+*.aiff
+*.mid
+*.midi
+*.als
+*.onnx
+*.pt
+*.pth
+*.h5
+*.safetensors
+# Tooling and caches.
+node_modules/
+.venv/
+__pycache__/
+.claude/
+.superpowers/
 # Browser build: wasm package, copied model, built site.
 /studio-ui/src/wasm-pkg
 /studio-ui/public-web

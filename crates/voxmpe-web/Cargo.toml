@@ -3,6 +3,7 @@ name = "voxmpe-web"
 version = "0.1.0"
 edition = "2021"
 publish = false
+license = "MIT"
 description = "voxmpe in the browser: the engine for pitch and studio Web Workers."
 
 [lib]

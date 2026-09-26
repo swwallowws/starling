@@ -2,6 +2,7 @@
 name = "voxmpe"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 description = "Sing, get expressive MPE MIDI: a studio for tuning note splits by ear, any Scala tuning, and a CLI."
 
 [lib]

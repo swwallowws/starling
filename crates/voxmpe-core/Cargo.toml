@@ -2,6 +2,7 @@
 name = "voxmpe-core"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 description = "Singing voice to expressive MPE MIDI: CREPE pitch tracking, note segmentation, per-note bend and dynamics."
 
 # Tuning-agnostic, numerically testable primitives shared by every voice->MIDI tool
