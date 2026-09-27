@@ -19,7 +19,7 @@ const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name
 const say = (text: string) => { $("message").textContent = text; };
 
 const { rail } = demoShell($("demo"), {
-  product: "voxMPE",
+  product: "voxmpe",
   title: "Sing, and the glides come out as MIDI bends.",
   intro: "A small slice of the studio, on the same engine: record a take, watch it become MIDI, switch to a microtonal tuning, then play it back.",
   steps: STEPS,
