@@ -125,9 +125,18 @@ async function render(): Promise<boolean> {
   const r = await api.render(take.id, s);
   if (mine !== renderSeq) return false;
   notes = r.notes;
+  // What the roll shows, for the walk script: each note's MIDI pitch, its
+  // center, and where it sounds (pitch plus its median bend).
+  canvas.dataset.notes = JSON.stringify(notes.map((n) => [n.pitch, n.center, n.pitch + median(n.bend.map(([, st]) => st))]));
   player?.setNotes(notes);
   draw();
   return true;
+}
+
+function median(xs: number[]): number {
+  if (!xs.length) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
 }
 
 for (const input of tuningInputs) {
