@@ -160,13 +160,18 @@ for (const input of tuningInputs) {
   });
 }
 
+/** Set on a manual Stop click so tick() doesn't mark the step done for an early stop. */
+let manualStop = false;
+
 // Play: the player's AudioContext resumes inside this click, so the first press sounds.
 playBtn.addEventListener("click", () => {
   if (!player || !take) return;
   if (player.playing) {
+    manualStop = true;
     player.stop();
     return;
   }
+  manualStop = false;
   player.play(0);
   playBtn.textContent = "Stop";
   requestAnimationFrame(tick);
@@ -174,19 +179,18 @@ playBtn.addEventListener("click", () => {
 
 function tick() {
   if (!player || !take) return;
-  if (player.playing && player.position() < take.info.duration_s) {
+  if (player.playing) {
     playhead = player.position();
     draw();
     requestAnimationFrame(tick);
     return;
   }
-  // Past the end: the player's own end check can miss by a hair of audio clock.
-  if (player.playing) player.stop();
-  const ended = player.position() >= take.info.duration_s - 0.1;
+  // The player now always stops itself at the real end (see player.ts), so reaching here with
+  // manualStop unset means it played through, not that this loop guessed the end.
   playhead = null;
   playBtn.textContent = "Play";
   draw();
-  if (ended) rail.done("play");
+  if (!manualStop) rail.done("play");
 }
 
 function startOver() {

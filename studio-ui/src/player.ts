@@ -44,11 +44,14 @@ export class Player {
     void this.ctx.resume();
     this.from = from;
     this.startedAt = this.ctx.currentTime;
-    this.voice = this.ctx.createBufferSource();
-    this.voice.buffer = this.buffer;
-    this.voice.connect(this.voiceBus);
-    this.voice.onended = () => { if (this.isPlaying && this.position() >= this.buffer!.duration) this.stop(); };
-    this.voice.start(this.startedAt, from);
+    const source = this.ctx.createBufferSource();
+    source.buffer = this.buffer;
+    source.connect(this.voiceBus);
+    // Fires on natural end and on an explicit stop() alike. this.voice === source rules out a stale
+    // event from a source a later seek/pause already replaced; isPlaying rules out our own stop().
+    source.onended = () => { if (this.isPlaying && this.voice === source) this.stop(); };
+    source.start(this.startedAt, from);
+    this.voice = source;
     this.isPlaying = true;
     this.scheduleMidi();
   }
