@@ -7,22 +7,24 @@ import { Player } from "../player";
 import { Recorder, defaultTakeName } from "../recorder";
 import { DEFAULT_SETTINGS, type LoadResp, type Preset, type RNote, type Settings, type TakeInfo } from "../types";
 import { missingFeatures } from "../web/support";
-import { stepRail } from "../../vendor/design/steprail.js";
+import { demoShell } from "../../vendor/design/demoshell.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const recordBtn = $<HTMLButtonElement>("record");
 const playBtn = $<HTMLButtonElement>("play");
 const canvas = $<HTMLCanvasElement>("roll");
-const studioLink = $<HTMLAnchorElement>("studio");
 const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="tuning"]')];
 
 const say = (text: string) => { $("message").textContent = text; };
 
-const rail = stepRail($("rail"), {
+const { rail } = demoShell($("demo"), {
+  product: "voxMPE",
+  title: "Sing, and the glides come out as MIDI bends.",
+  intro: "A small slice of the studio, on the same engine: record a take, watch it become MIDI, switch to a microtonal tuning, then play it back.",
   steps: STEPS,
+  full: { label: "studio", href: "../" },
   endText: "That's the idea. The full studio has the rest: every setting, more tunings, and .mid or Ableton Live export.",
-  onDone: () => { studioLink.hidden = false; },
   onReset: startOver,
 });
 
@@ -206,7 +208,6 @@ function startOver() {
   setTakeControls(false);
   playBtn.textContent = "Play";
   recordBtn.textContent = "Record";
-  studioLink.hidden = true;
   canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
   $("empty").hidden = false;
   say("");

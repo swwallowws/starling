@@ -6,45 +6,35 @@
     <title>Try voxMPE</title>
     <script>
       // For framing (the showcase site): ?theme=paper|night picks the mode
-      // before first paint, otherwise the system scheme applies; ?embed=1
-      // drops the page's own header, since the framing page names the tool.
+      // before first paint, otherwise the system scheme applies. The demo
+      // shell handles ?embed=1 itself once it loads.
       (function () {
-        var q = new URLSearchParams(location.search);
-        var t = q.get("theme");
+        var t = new URLSearchParams(location.search).get("theme");
         if (t === "paper" || t === "night") document.documentElement.dataset.theme = t;
-        if (q.get("embed") === "1") document.documentElement.classList.add("embed");
       })();
     </script>
   </head>
   <body>
-    <header class="try-head">
-      <strong class="wordmark">voxMPE</strong>
-      <span class="try-lead">Sing, and the glides come out as MIDI bends.</span>
-    </header>
-    <main class="try">
-      <nav id="rail" class="try-rail" aria-label="Steps"></nav>
-      <section class="try-live" aria-label="Demo">
-        <div class="try-row">
-          <button id="record" type="button">Record</button>
-          <button id="sample" type="button" disabled>Use a sample take (coming soon)</button>
-          <span id="rec-status" class="try-fine"></span>
-        </div>
-        <p id="message" class="try-message" role="status"></p>
-        <div class="try-stage">
-          <canvas id="roll"></canvas>
-          <p id="empty" class="try-empty">The piano roll shows up here after a take.</p>
-        </div>
-        <div class="try-row">
-          <span class="try-tuning" role="radiogroup" aria-label="Tuning">
-            <label><input type="radio" name="tuning" value="" checked disabled /> 12-TET</label>
-            <label><input type="radio" name="tuning" value="53-edo" disabled /> 53-EDO makam</label>
-          </span>
-          <button id="play" type="button" disabled>Play</button>
-          <a id="studio" class="try-studio" href="../" hidden>Open the full studio</a>
-        </div>
-        <p class="try-fine">Takes stay in this browser and are never uploaded.</p>
-      </section>
-    </main>
+    <div id="demo">
+      <div class="try-row">
+        <button id="record" type="button">Record</button>
+        <button id="sample" type="button" disabled>Use a sample take (coming soon)</button>
+        <span id="rec-status" class="try-fine"></span>
+      </div>
+      <p id="message" class="try-message" role="status"></p>
+      <div class="try-stage">
+        <canvas id="roll"></canvas>
+        <p id="empty" class="try-empty">The piano roll shows up here after a take.</p>
+      </div>
+      <div class="try-row">
+        <span class="try-tuning" role="radiogroup" aria-label="Tuning">
+          <label><input type="radio" name="tuning" value="" checked disabled /> 12-TET</label>
+          <label><input type="radio" name="tuning" value="53-edo" disabled /> 53-EDO makam</label>
+        </span>
+        <button id="play" type="button" disabled>Play</button>
+      </div>
+      <p class="try-fine">Takes stay in this browser and are never uploaded.</p>
+    </div>
     <script type="module" src="/src/try/main.ts"></script>
   </body>
 </html>
