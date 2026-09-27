@@ -16,27 +16,27 @@
   </head>
   <body>
     <div id="demo">
-      <div class="try-row">
-        <button id="record" type="button">Record</button>
-        <button id="sample" type="button" disabled>Use a sample take (coming soon)</button>
-        <span id="rec-status" class="try-fine"></span>
-      </div>
       <p id="message" class="try-message" role="status"></p>
       <div class="try-stage">
         <canvas id="roll"></canvas>
         <p id="empty" class="try-empty">The piano roll shows up here after a take.</p>
       </div>
-      <label id="smoothing-row" class="try-smoothing" hidden>
-        <span>Smoothing</span>
-        <span id="smoothing-val">0%</span>
-        <input id="smoothing" type="range" min="0" max="100" step="5" value="0" />
-      </label>
-      <div class="try-row">
-        <span class="try-tuning" role="radiogroup" aria-label="Tuning">
+      <div class="try-toolbar">
+        <div class="try-toolbar-transport">
+          <button id="record" type="button" data-icon="record" data-toggle data-pressed-icon="stop" data-key="r"></button>
+          <button id="play" type="button" data-icon="play" data-toggle data-key="Space" disabled></button>
+          <button id="sample" type="button" data-icon="loop" data-label="Use a sample take (coming soon)" disabled></button>
+          <span id="rec-status" class="try-fine"></span>
+        </div>
+        <span class="try-toolbar-tuning try-tuning" role="radiogroup" aria-label="Tuning">
           <label><input type="radio" name="tuning" value="" checked disabled /> 12-TET</label>
           <label><input type="radio" name="tuning" value="53-edo" disabled /> 53-EDO makam</label>
         </span>
-        <button id="play" type="button" disabled>Play</button>
+        <label id="smoothing-row" class="try-toolbar-smoothing" hidden>
+          <span>Smoothing</span>
+          <input id="smoothing" type="range" min="0" max="100" step="5" value="0" />
+          <span id="smoothing-val">0%</span>
+        </label>
       </div>
       <p class="try-fine">Takes stay in this browser and are never uploaded.</p>
     </div>

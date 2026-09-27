@@ -8,11 +8,12 @@ import { Recorder, defaultTakeName } from "../recorder";
 import { DEFAULT_SETTINGS, type LoadResp, type Preset, type RNote, type Settings, type TakeInfo } from "../types";
 import { missingFeatures } from "../web/support";
 import { demoShell } from "../../vendor/design/demoshell.js";
+import { iconButton } from "../../vendor/design/iconbutton.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const recordBtn = $<HTMLButtonElement>("record");
-const playBtn = $<HTMLButtonElement>("play");
+const recordEl = $<HTMLButtonElement>("record");
+const playEl = $<HTMLButtonElement>("play");
 const canvas = $<HTMLCanvasElement>("roll");
 const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="tuning"]')];
 const smoothingRow = $<HTMLElement>("smoothing-row");
@@ -20,6 +21,19 @@ const smoothingInput = $<HTMLInputElement>("smoothing");
 const smoothingVal = $<HTMLElement>("smoothing-val");
 
 const say = (text: string) => { $("message").textContent = text; };
+
+// Record/Stop and Play are icon toggles; the record icon swaps to stop while
+// recording, and the play icon swaps to pause while playing. Space and R are
+// wired below through demoShell's primary/keys, routed through toggle() so
+// the key and the click run the same handler.
+const record = iconButton(recordEl, {
+  onPress: (recording) => (recording ? void startRecording() : void finishRecording()),
+});
+const play = iconButton(playEl, {
+  onPress: (playing) => (playing ? startPlayback() : stopPlayback()),
+});
+// A disabled placeholder: the tooltip carries the "coming soon" note.
+iconButton($<HTMLButtonElement>("sample"));
 
 const { rail } = demoShell($("demo"), {
   product: "voxmpe",
@@ -29,6 +43,8 @@ const { rail } = demoShell($("demo"), {
   full: { label: "studio", href: "../" },
   endText: "That's the idea. There's more inside: every setting, more tunings, and .mid or Ableton Live export.",
   onReset: startOver,
+  primary: { toggle: () => play.toggle(), label: "play" },
+  keys: { r: { run: () => record.toggle(), label: "record" } },
 });
 
 const recorder = new Recorder();
@@ -58,22 +74,19 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
 
 function setTakeControls(on: boolean) {
   for (const i of tuningInputs) i.disabled = !on;
-  playBtn.disabled = !on || notes.length === 0;
+  playEl.disabled = !on || notes.length === 0;
 }
 
 paintSmoothing();
 
 if (api.kind === "web" && missingFeatures().length > 0) {
   say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
-  recordBtn.disabled = true;
+  recordEl.disabled = true;
 }
 
-// Record / Stop: one button, and the take stops by itself at the limit.
-recordBtn.addEventListener("click", () => {
-  if (recorder.active) void finishRecording();
-  else void startRecording();
-});
-
+// Record/Stop is driven by the icon button above (click or the R key), which
+// flips its own pressed state before calling onPress; the take stops by
+// itself at the limit too, so finishRecording() also runs off a click.
 async function startRecording() {
   player?.stop();
   say("");
@@ -85,21 +98,18 @@ async function startRecording() {
       if (recordLimit(ms)) void finishRecording();
     });
   } catch (e) {
+    record.setPressed(false);
     say(micMessage(e));
-    return;
   }
-  recordBtn.textContent = "Stop";
-  recordBtn.dataset.recording = "";
 }
 
 async function finishRecording() {
   if (stopping || !recorder.active) return;
   stopping = true;
-  recordBtn.disabled = true;
+  recordEl.disabled = true;
+  record.setPressed(false); // also runs when the limit auto-stops it, not just a click
   try {
     const { wav, seconds } = await recorder.stop();
-    recordBtn.textContent = "Record again";
-    delete recordBtn.dataset.recording;
     $("rec-status").textContent = "";
     say(`Analyzing ${seconds.toFixed(1)} s...`);
     const r = await api.uploadTake(defaultTakeName(new Date()), wav, (f) => say(`Analyzing... ${Math.round(f * 100)}%`));
@@ -108,7 +118,7 @@ async function finishRecording() {
     say((e as Error).message);
   } finally {
     stopping = false;
-    recordBtn.disabled = false;
+    recordEl.disabled = false;
   }
 }
 
@@ -171,7 +181,7 @@ for (const input of tuningInputs) {
       return;
     }
     say(tuning ? `${notes.length} notes in 53-EDO, the 53 commas per octave of Turkish makam.` : `${notes.length} notes in 12-TET.`);
-    playBtn.disabled = notes.length === 0;
+    playEl.disabled = notes.length === 0;
     if (tuning) rail.done("tuning");
   });
 }
@@ -190,19 +200,23 @@ smoothingInput.addEventListener("input", async () => {
 /** Set on a manual Stop click so tick() doesn't mark the step done for an early stop. */
 let manualStop = false;
 
-// Play: the player's AudioContext resumes inside this click, so the first press sounds.
-playBtn.addEventListener("click", () => {
-  if (!player || !take) return;
-  if (player.playing) {
-    manualStop = true;
-    player.stop();
+// Play/Stop is driven by the icon button above (click or Space). The
+// player's AudioContext resumes inside that click, so the first press sounds.
+function startPlayback() {
+  if (!player || !take) {
+    play.setPressed(false);
     return;
   }
   manualStop = false;
   player.play(0);
-  playBtn.textContent = "Stop";
   requestAnimationFrame(tick);
-});
+}
+
+function stopPlayback() {
+  if (!player || !take) return;
+  manualStop = true;
+  player.stop();
+}
 
 function tick() {
   if (!player || !take) return;
@@ -215,14 +229,14 @@ function tick() {
   // The player now always stops itself at the real end (see player.ts), so reaching here with
   // manualStop unset means it played through, not that this loop guessed the end.
   playhead = null;
-  playBtn.textContent = "Play";
+  play.setPressed(false);
   draw();
   if (!manualStop) rail.done("play");
 }
 
 function startOver() {
   if (recorder.active && !stopping) void recorder.stop();
-  delete recordBtn.dataset.recording;
+  record.setPressed(false);
   $("rec-status").textContent = "";
   player?.stop();
   take = null;
@@ -235,8 +249,7 @@ function startOver() {
   paintSmoothing();
   smoothingRow.hidden = true;
   setTakeControls(false);
-  playBtn.textContent = "Play";
-  recordBtn.textContent = "Record";
+  play.setPressed(false);
   canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
   $("empty").hidden = false;
   say("");

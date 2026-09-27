@@ -1,10 +1,9 @@
 @import "../../vendor/design/tokens.css";
 @import "../../vendor/design/steprail.css";
+@import "../../vendor/design/iconbutton.css";
 @import "../../vendor/design/demoshell.css";
 
 * { box-sizing: border-box; }
-
-.try-row { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; }
 
 .try-stage { position: relative; height: 200px; border: var(--hairline); background: var(--ground); }
 #roll { display: block; width: 100%; height: 100%; }
@@ -15,29 +14,32 @@
 .try-fine { margin: 0; font-size: 12px; color: var(--ink-mut); }
 #rec-status { font-variant-numeric: tabular-nums; }
 
-/* The smoothing slider: the studio's own Expression control (controls.ts,
-   styles.css), reused as is: same range, default, --fill fill and thumb. */
-.try-smoothing { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2) var(--space); align-items: center; font-size: 13px; }
-.try-smoothing[hidden] { display: none; }
-#smoothing-val { color: var(--acc); font-variant-numeric: tabular-nums; }
-#smoothing { grid-column: 1 / -1; width: 100%; appearance: none; -webkit-appearance: none; height: 12px; background: transparent; cursor: pointer; }
+/* One tidy toolbar under the roll: transport icon buttons on the left, the
+   tuning switch next to them, and the smoothing control pushed to the right.
+   Wraps cleanly to two rows on phones (smoothing takes its own full row). */
+.try-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space) calc(var(--space) * 2); margin-top: var(--space); }
+.try-toolbar-transport { display: flex; align-items: center; gap: calc(var(--space) / 2); }
+
+/* The smoothing control: the studio's own Expression > Smoothing slider,
+   reused as is, but compact: a short track instead of a full-width one. */
+.try-toolbar-smoothing { display: flex; align-items: center; gap: calc(var(--space) / 2); margin-left: auto; font-size: 13px; }
+.try-toolbar-smoothing[hidden] { display: none; }
+#smoothing-val { min-width: 3ch; color: var(--acc); font-variant-numeric: tabular-nums; text-align: right; }
+#smoothing { width: 160px; appearance: none; -webkit-appearance: none; height: 12px; background: transparent; cursor: pointer; }
 #smoothing::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(to right, var(--acc) var(--fill, 0%), var(--line) var(--fill, 0%)); }
 #smoothing::-moz-range-track { height: 2px; background: linear-gradient(to right, var(--acc) var(--fill, 0%), var(--line) var(--fill, 0%)); }
 #smoothing::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; background: var(--acc); border: 0; border-radius: 0; }
 #smoothing::-moz-range-thumb { width: 12px; height: 12px; background: var(--acc); border: 0; border-radius: 0; }
 
-button { font: inherit; color: var(--ink); background: var(--ground-2); border: var(--hairline); border-radius: var(--radius); padding: calc(var(--space) / 2) calc(var(--space) * 1.5); cursor: pointer; }
-button:hover:not(:disabled) { background: var(--band); }
-button:disabled { opacity: 0.5; cursor: default; }
-#record[data-recording] { border-color: var(--acc); color: var(--acc); }
 :focus-visible { outline: 1px solid var(--acc); outline-offset: 1px; }
 .steprail .steprail-reset { background: none; border: 0; padding: 0; }
 
-.try-tuning { display: inline-flex; flex-wrap: wrap; gap: var(--space); margin-right: var(--space); }
+.try-tuning { display: inline-flex; flex-wrap: wrap; gap: var(--space); }
 .try-tuning label { display: inline-flex; gap: calc(var(--space) / 2); align-items: center; }
 .try-tuning input { accent-color: var(--acc); margin: 0; }
 .try-tuning label:has(input:disabled) { color: var(--ink-mut); }
 
 @media (max-width: 700px) {
   .try-stage { height: 170px; }
+  .try-toolbar-smoothing { flex: 1 1 100%; margin-left: 0; }
 }
