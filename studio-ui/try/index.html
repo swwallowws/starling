@@ -26,6 +26,11 @@
         <canvas id="roll"></canvas>
         <p id="empty" class="try-empty">The piano roll shows up here after a take.</p>
       </div>
+      <label id="smoothing-row" class="try-smoothing" hidden>
+        <span>Smoothing</span>
+        <span id="smoothing-val">0%</span>
+        <input id="smoothing" type="range" min="0" max="100" step="5" value="0" />
+      </label>
       <div class="try-row">
         <span class="try-tuning" role="radiogroup" aria-label="Tuning">
           <label><input type="radio" name="tuning" value="" checked disabled /> 12-TET</label>

@@ -15,16 +15,19 @@ const recordBtn = $<HTMLButtonElement>("record");
 const playBtn = $<HTMLButtonElement>("play");
 const canvas = $<HTMLCanvasElement>("roll");
 const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="tuning"]')];
+const smoothingRow = $<HTMLElement>("smoothing-row");
+const smoothingInput = $<HTMLInputElement>("smoothing");
+const smoothingVal = $<HTMLElement>("smoothing-val");
 
 const say = (text: string) => { $("message").textContent = text; };
 
 const { rail } = demoShell($("demo"), {
   product: "voxmpe",
-  title: "Sing, and the glides come out as MIDI bends.",
-  intro: "A small slice of the studio, on the same engine: record a take, watch it become MIDI, switch to a microtonal tuning, then play it back.",
+  title: "Turn a voice into notes.",
+  intro: "A small slice of the studio, on the same engine.",
   steps: STEPS,
   full: { label: "studio", href: "../" },
-  endText: "That's the idea. The full studio has the rest: every setting, more tunings, and .mid or Ableton Live export.",
+  endText: "That's the idea. There's more inside: every setting, more tunings, and .mid or Ableton Live export.",
   onReset: startOver,
 });
 
@@ -36,8 +39,16 @@ let notes: RNote[] = [];
 let playhead: number | null = null;
 let presets: Preset[] | null = null;
 let tuning: Preset | null = null;
+let smoothing = DEFAULT_SETTINGS.smoothing;
 let renderSeq = 0;
 let stopping = false;
+
+/** Same control as the studio's Expression > Smoothing slider: 0..100%, --fill paints the track. */
+function paintSmoothing() {
+  const pct = Number(smoothingInput.value);
+  smoothingInput.style.setProperty("--fill", `${pct}%`);
+  smoothingVal.textContent = `${pct}%`;
+}
 
 function draw() {
   if (take) drawRoll(canvas, take.info, notes, playhead);
@@ -49,6 +60,8 @@ function setTakeControls(on: boolean) {
   for (const i of tuningInputs) i.disabled = !on;
   playBtn.disabled = !on || notes.length === 0;
 }
+
+paintSmoothing();
 
 if (api.kind === "web" && missingFeatures().length > 0) {
   say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
@@ -106,6 +119,7 @@ async function open(r: LoadResp) {
   player ??= new Player();
   await player.load(api.audioUrl());
   $("empty").hidden = true;
+  smoothingRow.hidden = false;
   $("rec-status").textContent = ""; // the meter's last block can land after Stop
   rail.done("sing");
   presets ??= await api.listTunings().catch(() => null);
@@ -123,7 +137,7 @@ async function open(r: LoadResp) {
 async function render(): Promise<boolean> {
   if (!take) return false;
   const mine = ++renderSeq;
-  const s: Settings = { ...DEFAULT_SETTINGS, tuning_name: tuning?.id ?? null, tuning_scl: tuning?.scl ?? null };
+  const s: Settings = { ...DEFAULT_SETTINGS, tuning_name: tuning?.id ?? null, tuning_scl: tuning?.scl ?? null, smoothing };
   const r = await api.render(take.id, s);
   if (mine !== renderSeq) return false;
   notes = r.notes;
@@ -161,6 +175,17 @@ for (const input of tuningInputs) {
     if (tuning) rail.done("tuning");
   });
 }
+
+// Smoothing: the studio's own Expression control, reused as is. Free play, not a rail step.
+smoothingInput.addEventListener("input", async () => {
+  smoothing = Number(smoothingInput.value) / 100;
+  paintSmoothing();
+  try {
+    await render();
+  } catch (e) {
+    say((e as Error).message);
+  }
+});
 
 /** Set on a manual Stop click so tick() doesn't mark the step done for an early stop. */
 let manualStop = false;
@@ -205,6 +230,10 @@ function startOver() {
   playhead = null;
   tuning = null;
   tuningInputs[0].checked = true;
+  smoothing = DEFAULT_SETTINGS.smoothing;
+  smoothingInput.value = String(smoothing * 100);
+  paintSmoothing();
+  smoothingRow.hidden = true;
   setTakeControls(false);
   playBtn.textContent = "Play";
   recordBtn.textContent = "Record";
