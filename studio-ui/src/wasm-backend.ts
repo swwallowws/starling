@@ -15,8 +15,13 @@ const CAN_DRAG_OUT = false;
 const studioWorker = () => new Worker(new URL("./web/workers/studio.worker.ts", import.meta.url), { type: "module" });
 const pitchWorker = () => new Worker(new URL("./web/workers/pitch.worker.ts", import.meta.url), { type: "module" });
 
+/** The pitch model sits at the site root (public-web/), one folder above this
+ *  module (src/ in dev, assets/ when built), so pages in subfolders like try/
+ *  find it too. A variable, so vite leaves this URL alone. */
+const MODEL_PATH = "../crepe-tiny.onnx";
+
 async function loadModel(): Promise<ArrayBuffer> {
-  const res = await fetch("./crepe-tiny.onnx");
+  const res = await fetch(new URL(MODEL_PATH, import.meta.url));
   if (!res.ok) throw new Error(`could not download the pitch model (${res.status})`);
   return res.arrayBuffer();
 }

@@ -1,0 +1,200 @@
+// The guided try page: sing, see the MIDI with its bends, switch to 53-EDO,
+// play it back. A small slice of the studio on the same engine.
+import "./try.css";
+import { backend as api } from "../backend-impl";
+import { drawRoll } from "../roll";
+import { Player } from "../player";
+import { Recorder, defaultTakeName } from "../recorder";
+import { DEFAULT_SETTINGS, type LoadResp, type Preset, type RNote, type Settings, type TakeInfo } from "../types";
+import { missingFeatures } from "../web/support";
+import { stepRail } from "../../vendor/design/steprail.js";
+import { STEPS, micMessage, recordLimit } from "./steps";
+
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const recordBtn = $<HTMLButtonElement>("record");
+const playBtn = $<HTMLButtonElement>("play");
+const canvas = $<HTMLCanvasElement>("roll");
+const studioLink = $<HTMLAnchorElement>("studio");
+const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="tuning"]')];
+
+const say = (text: string) => { $("message").textContent = text; };
+
+const rail = stepRail($("rail"), {
+  steps: STEPS,
+  endText: "That's the idea. The full studio has the rest: every setting, more tunings, and .mid or Ableton Live export.",
+  onDone: () => { studioLink.hidden = false; },
+  onReset: startOver,
+});
+
+const recorder = new Recorder();
+/** Made on the first take, after a click, so the page never starts audio on its own. */
+let player: Player | null = null;
+let take: { id: number; info: TakeInfo } | null = null;
+let notes: RNote[] = [];
+let playhead: number | null = null;
+let presets: Preset[] | null = null;
+let tuning: Preset | null = null;
+let renderSeq = 0;
+let stopping = false;
+
+function draw() {
+  if (take) drawRoll(canvas, take.info, notes, playhead);
+}
+window.addEventListener("resize", draw);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+
+function setTakeControls(on: boolean) {
+  for (const i of tuningInputs) i.disabled = !on;
+  playBtn.disabled = !on || notes.length === 0;
+}
+
+if (api.kind === "web" && missingFeatures().length > 0) {
+  say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
+  recordBtn.disabled = true;
+}
+
+// Record / Stop: one button, and the take stops by itself at the limit.
+recordBtn.addEventListener("click", () => {
+  if (recorder.active) void finishRecording();
+  else void startRecording();
+});
+
+async function startRecording() {
+  player?.stop();
+  say("");
+  const t0 = performance.now();
+  try {
+    await recorder.start(() => {
+      const ms = performance.now() - t0;
+      $("rec-status").textContent = `${(ms / 1000).toFixed(1)} s`;
+      if (recordLimit(ms)) void finishRecording();
+    });
+  } catch (e) {
+    say(micMessage(e));
+    return;
+  }
+  recordBtn.textContent = "Stop";
+  recordBtn.dataset.recording = "";
+}
+
+async function finishRecording() {
+  if (stopping || !recorder.active) return;
+  stopping = true;
+  recordBtn.disabled = true;
+  try {
+    const { wav, seconds } = await recorder.stop();
+    recordBtn.textContent = "Record again";
+    delete recordBtn.dataset.recording;
+    $("rec-status").textContent = "";
+    say(`Analyzing ${seconds.toFixed(1)} s...`);
+    const r = await api.uploadTake(defaultTakeName(new Date()), wav, (f) => say(`Analyzing... ${Math.round(f * 100)}%`));
+    await open(r);
+  } catch (e) {
+    say((e as Error).message);
+  } finally {
+    stopping = false;
+    recordBtn.disabled = false;
+  }
+}
+
+async function open(r: LoadResp) {
+  take = { id: r.take_id, info: r.info };
+  notes = [];
+  playhead = null;
+  player ??= new Player();
+  await player.load(api.audioUrl());
+  $("empty").hidden = true;
+  $("rec-status").textContent = ""; // the meter's last block can land after Stop
+  rail.done("sing");
+  presets ??= await api.listTunings().catch(() => null);
+  await render();
+  setTakeControls(true);
+  if (notes.length === 0) {
+    say(r.info.warning ?? "No notes found in that take. Try singing a little longer or louder.");
+    return;
+  }
+  say(`${notes.length} notes. The line through each note is its bend curve.`);
+  rail.done("midi");
+}
+
+/** Render the open take with the chosen tuning; false when a newer render took over. */
+async function render(): Promise<boolean> {
+  if (!take) return false;
+  const mine = ++renderSeq;
+  const s: Settings = { ...DEFAULT_SETTINGS, tuning_name: tuning?.id ?? null, tuning_scl: tuning?.scl ?? null };
+  const r = await api.render(take.id, s);
+  if (mine !== renderSeq) return false;
+  notes = r.notes;
+  player?.setNotes(notes);
+  draw();
+  return true;
+}
+
+for (const input of tuningInputs) {
+  input.addEventListener("change", async () => {
+    if (!input.checked) return;
+    const id = input.value;
+    tuning = id ? presets?.find((p) => p.id === id) ?? null : null;
+    if (id && !tuning) {
+      say("That tuning didn't load. Try again in a moment.");
+      return;
+    }
+    try {
+      if (!(await render())) return;
+    } catch (e) {
+      say((e as Error).message);
+      return;
+    }
+    say(tuning ? `${notes.length} notes in 53-EDO, the 53 commas per octave of Turkish makam.` : `${notes.length} notes in 12-TET.`);
+    playBtn.disabled = notes.length === 0;
+    if (tuning) rail.done("tuning");
+  });
+}
+
+// Play: the player's AudioContext resumes inside this click, so the first press sounds.
+playBtn.addEventListener("click", () => {
+  if (!player || !take) return;
+  if (player.playing) {
+    player.stop();
+    return;
+  }
+  player.play(0);
+  playBtn.textContent = "Stop";
+  requestAnimationFrame(tick);
+});
+
+function tick() {
+  if (!player || !take) return;
+  if (player.playing && player.position() < take.info.duration_s) {
+    playhead = player.position();
+    draw();
+    requestAnimationFrame(tick);
+    return;
+  }
+  // Past the end: the player's own end check can miss by a hair of audio clock.
+  if (player.playing) player.stop();
+  const ended = player.position() >= take.info.duration_s - 0.1;
+  playhead = null;
+  playBtn.textContent = "Play";
+  draw();
+  if (ended) rail.done("play");
+}
+
+function startOver() {
+  if (recorder.active && !stopping) void recorder.stop();
+  delete recordBtn.dataset.recording;
+  $("rec-status").textContent = "";
+  player?.stop();
+  take = null;
+  notes = [];
+  playhead = null;
+  tuning = null;
+  tuningInputs[0].checked = true;
+  setTakeControls(false);
+  playBtn.textContent = "Play";
+  recordBtn.textContent = "Record";
+  studioLink.hidden = true;
+  canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+  $("empty").hidden = false;
+  say("");
+}

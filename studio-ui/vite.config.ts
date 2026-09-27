@@ -9,10 +9,22 @@ export default defineConfig(({ mode }) =>
         base: "./",
         publicDir: "public-web",
         // es2022: every browser the site supports (WebAssembly SIMD) has it.
-        build: { outDir: "web-dist", emptyOutDir: true, target: "es2022" },
+        build: {
+          outDir: "web-dist",
+          emptyOutDir: true,
+          target: "es2022",
+          // The studio, and the guided demo at try/.
+          rollupOptions: {
+            input: {
+              main: fileURLToPath(new URL("./index.html", import.meta.url)),
+              try: fileURLToPath(new URL("./try/index.html", import.meta.url)),
+            },
+          },
+        },
         worker: { format: "es" },
         resolve: {
-          alias: { "./backend-impl": fileURLToPath(new URL("./src/wasm-backend.ts", import.meta.url)) },
+          // ./backend-impl from src/, ../backend-impl from src/try/.
+          alias: [{ find: /^\.\.?\/backend-impl$/, replacement: fileURLToPath(new URL("./src/wasm-backend.ts", import.meta.url)) }],
         },
       }
     : {
