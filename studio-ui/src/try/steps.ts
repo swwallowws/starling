@@ -18,6 +18,6 @@ export function micMessage(err: unknown): string {
 export const STEPS = [
   { id: "sing", label: "Sing anything", hint: "Up to about 10 seconds. Stop whenever you like." },
   { id: "midi", label: "See it become MIDI", hint: "Glides stay as bend curves." },
-  { id: "tuning", label: "Switch to 53-EDO makam" },
+  { id: "tuning", label: "Switch to 53-EDO makam", hint: "Each note bends onto the nearest makam pitch." },
   { id: "play", label: "Play it back" },
 ];
