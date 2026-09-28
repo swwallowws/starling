@@ -22,13 +22,13 @@
       <p id="message" class="try-message" role="status"></p>
       <div class="try-stage">
         <canvas id="roll"></canvas>
-        <p id="empty" class="try-empty">The piano roll shows up here after a take.</p>
+        <p id="empty" class="try-empty"><span>The piano roll shows up here after a take. No mic handy? <button id="sample-link" type="button" class="try-link">Try a starling's song.</button></span></p>
       </div>
       <div class="try-toolbar">
         <div class="try-toolbar-transport">
           <button id="record" type="button" data-icon="record" data-toggle data-pressed-icon="stop" data-key="r"></button>
           <button id="play" type="button" data-icon="play" data-toggle data-key="Space" disabled></button>
-          <button id="sample" type="button" data-icon="loop" data-label="Use a sample take (coming soon)" disabled></button>
+          <button id="sample" type="button" data-icon="loop" data-label="Try a starling's song"></button>
           <span id="rec-status" class="try-fine"></span>
         </div>
         <span class="try-toolbar-tuning try-tuning" role="radiogroup" aria-label="Tuning">
@@ -41,7 +41,7 @@
           <span id="smoothing-val">0%</span>
         </label>
       </div>
-      <p class="try-fine">Takes stay in this browser and are never uploaded.</p>
+      <p class="try-fine">Takes stay in this browser and are never uploaded. Starling song: <a href="https://freesound.org/s/737756/" target="_blank" rel="noopener">Vrymaa, Freesound</a>, CC0.</p>
     </div>
     <script type="module" src="/src/try/main.ts"></script>
   </body>

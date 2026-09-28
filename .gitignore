@@ -21,6 +21,10 @@
 *.pth
 *.h5
 *.safetensors
+# Except the try page's sample take (a starling, CC0), made by studio-ui/scripts/make-sample.mjs.
+!/studio-ui/samples/starling-song.mp3
+# Research downloads, notes and scripts (sample hunting): kept local.
+/research/
 # Tooling and caches.
 node_modules/
 .venv/

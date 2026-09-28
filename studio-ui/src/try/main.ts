@@ -10,10 +10,15 @@ import { missingFeatures } from "../web/support";
 import { demoShell } from "../../vendor/design/demoshell.js";
 import { iconButton } from "../../vendor/design/iconbutton.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
+import { SAMPLE_NAME, browserDecode, sampleWav } from "./sample";
+
+/** The sample take: a starling's song (Vrymaa, Freesound 737756, CC0), 2 octaves down. */
+const SAMPLE_URL = new URL("../../samples/starling-song.mp3", import.meta.url);
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const recordEl = $<HTMLButtonElement>("record");
 const playEl = $<HTMLButtonElement>("play");
+const sampleEls = [$<HTMLButtonElement>("sample"), $<HTMLButtonElement>("sample-link")];
 const canvas = $<HTMLCanvasElement>("roll");
 const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="tuning"]')];
 const smoothingRow = $<HTMLElement>("smoothing-row");
@@ -32,8 +37,9 @@ const record = iconButton(recordEl, {
 const play = iconButton(playEl, {
   onPress: (playing) => (playing ? startPlayback() : stopPlayback()),
 });
-// A disabled placeholder: the tooltip carries the "coming soon" note.
-iconButton($<HTMLButtonElement>("sample"));
+// The sample take: the toolbar button, and the link in the empty roll.
+iconButton(sampleEls[0], { onPress: () => void useSample() });
+sampleEls[1].addEventListener("click", () => void useSample());
 
 const { rail } = demoShell($("demo"), {
   product: "Starling",
@@ -79,10 +85,15 @@ function setTakeControls(on: boolean) {
 
 paintSmoothing();
 
-if (api.kind === "web" && missingFeatures().length > 0) {
-  say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
-  recordEl.disabled = true;
+const unsupported = api.kind === "web" && missingFeatures().length > 0;
+if (unsupported) say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
+
+/** Record and the sample buttons are off while a take is recorded or analyzed. */
+function setTakeSources(on: boolean) {
+  recordEl.disabled = !on || unsupported;
+  for (const el of sampleEls) el.disabled = !on || unsupported;
 }
+setTakeSources(true);
 
 // Record/Stop is driven by the icon button above (click or the R key), which
 // flips its own pressed state before calling onPress; the take stops by
@@ -97,6 +108,7 @@ async function startRecording() {
       $("rec-status").textContent = `${(ms / 1000).toFixed(1)} s`;
       if (recordLimit(ms)) void finishRecording();
     });
+    for (const el of sampleEls) el.disabled = true;
   } catch (e) {
     record.setPressed(false);
     say(micMessage(e));
@@ -106,7 +118,7 @@ async function startRecording() {
 async function finishRecording() {
   if (stopping || !recorder.active) return;
   stopping = true;
-  recordEl.disabled = true;
+  setTakeSources(false);
   record.setPressed(false); // also runs when the limit auto-stops it, not just a click
   try {
     const { wav, seconds } = await recorder.stop();
@@ -118,11 +130,32 @@ async function finishRecording() {
     say((e as Error).message);
   } finally {
     stopping = false;
-    recordEl.disabled = false;
+    setTakeSources(true);
   }
 }
 
-async function open(r: LoadResp) {
+/** Open the starling's song as a take: the same path as a recording, from the "sing" step on. */
+async function useSample() {
+  if (recorder.active || stopping || unsupported) return;
+  if (play.pressed) {
+    play.setPressed(false);
+    stopPlayback();
+  }
+  setTakeSources(false);
+  say("Fetching a starling's song...");
+  try {
+    const { wav, seconds } = await sampleWav(SAMPLE_URL, browserDecode);
+    say(`Analyzing ${seconds.toFixed(1)} s...`);
+    const r = await api.uploadTake(SAMPLE_NAME, wav, (f) => say(`Analyzing... ${Math.round(f * 100)}%`));
+    await open(r, "A starling, 2 octaves down so the whistles fall in singing range. ");
+  } catch (e) {
+    say((e as Error).message);
+  } finally {
+    setTakeSources(true);
+  }
+}
+
+async function open(r: LoadResp, lead = "") {
   take = { id: r.take_id, info: r.info };
   notes = [];
   playhead = null;
@@ -139,7 +172,7 @@ async function open(r: LoadResp) {
     say(r.info.warning ?? "No notes found in that take. Try singing a little longer or louder.");
     return;
   }
-  say(`${notes.length} notes. The line through each note is its bend curve.`);
+  say(`${lead}${notes.length} notes. The line through each note is its bend curve.`);
   rail.done("midi");
 }
 
