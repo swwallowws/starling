@@ -13,8 +13,12 @@ export function tint(acc: string, ground: string, p: number): string {
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 }
 
-/** roll.md: tint strength 35% + 65% * velocity. */
-export const noteStrength = (velocity: number) => 0.35 + 0.65 * velocity;
+/** roll.md: tint strength by pitch, 40% at the lowest pitch in view (`lo`) up to
+ *  100% at the highest (`hi`), one gradient along the line. */
+export function noteStrength(pitch: number, lo: number, hi: number): number {
+  if (!(hi > lo)) return 1;
+  return 0.4 + 0.6 * Math.min(1, Math.max(0, (pitch - lo) / (hi - lo)));
+}
 
 const BLACK = new Set([1, 3, 6, 8, 10]);
 export const isBlackKey = (p: number) => BLACK.has(((Math.round(p) % 12) + 12) % 12);

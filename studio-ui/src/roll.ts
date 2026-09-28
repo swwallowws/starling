@@ -85,15 +85,17 @@ export function drawRoll(
   g.globalAlpha = 1;
   g.lineWidth = 1;
 
-  // Notes: tints of the accent; the sounding note is full accent with an ink outline.
+  // Notes: tints of the accent shaded by pitch; the sounding note is full accent with an ink outline.
   const noteH = Math.max(2, row - 1);
+  const pitches = notes.map((n) => n.pitch);
+  const lo = Math.min(...pitches), hi = Math.max(...pitches);
   for (const n of notes) {
     const x0 = timeToX(v, n.start);
     const x1 = timeToX(v, n.end);
     const y = pitchToY(v, n.pitch) - noteH / 2;
     const width = Math.max(1, x1 - x0 - 1);
     const sounding = playhead !== null && playhead >= n.start && playhead < n.end;
-    g.fillStyle = sounding ? c.acc : tint(c.acc, c.ground, noteStrength(n.velocity));
+    g.fillStyle = sounding ? c.acc : tint(c.acc, c.ground, noteStrength(n.pitch, lo, hi));
     g.fillRect(x0, y, width, noteH);
     if (sounding) {
       g.strokeStyle = c.ink;
