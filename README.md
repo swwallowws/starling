@@ -33,7 +33,7 @@ install, recordings kept in the browser.
 (`rustup target add wasm32-unknown-unknown`).
 
 `scripts/deploy-web.sh --stage DIR` stages the site; `--push CHECKOUT` publishes
-it to a clone of `swwallowws/voxmpe-web` (GitHub Pages).
+it to a clone of `swwallowws/starling-web` (GitHub Pages).
 
 ## Setup
 

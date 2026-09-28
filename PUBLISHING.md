@@ -1,6 +1,6 @@
 # Publishing checklist
 
-Before flipping `swwallowws/voxmpe` from private to public. Audited 2026-09-26 on
+Before flipping `swwallowws/starling` (formerly `voxmpe`) from private to public. Audited 2026-09-26 on
 `main`, 62 commits, one branch (`main`, same as `origin/main`).
 
 Status: **ready to flip once the open items below are decided.** Nothing in the
@@ -42,7 +42,7 @@ history needs rewriting.
   `node_modules/`, `.venv/`, `__pycache__/`, `.claude/` and `.superpowers/`.
 - [x] **`web/deploy/LICENSE` now carries MIT** (it said "All rights reserved"
   since `b42a4fc`). `scripts/deploy-web.sh` copies it into the public
-  `voxmpe-web` site repo, so the live site keeps the old text until the next
+  `starling-web` site repo, so the live site keeps the old text until the next
   deploy.
 - [ ] **Stale privacy notes in the plans.**
   `docs/superpowers/plans/2026-09-25-voxmpe-web.md` line 22 says "The voxmpe
