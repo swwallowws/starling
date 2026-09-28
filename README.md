@@ -43,6 +43,11 @@ Needs Rust, Node, and Python with torch, torchcrepe and onnxruntime (for the mod
 2. Build the UI once: `cd studio-ui && npm install && npm run build`.
 3. `cargo install --path crates/voxmpe` (or `cargo run --release -p voxmpe -- studio`).
 
+`voxmpe convert take.wav -o take.als` writes a Live 12 set instead of MIDI.
+With a tuning other than 12-TET the set opens with that tuning loaded, the
+notes are its steps (the same numbers as the "MIDI + tuning for Live 12"
+export) and each note's pitch curve holds only its glides and vibrato.
+
 The `.als` writer comes from
 [expressive-liveset](https://github.com/swwallowws/expressive-liveset), a git
 dependency fetched over SSH. That repo is private for now, so the build fails

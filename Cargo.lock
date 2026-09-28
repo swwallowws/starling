@@ -502,7 +502,7 @@ dependencies = [
 [[package]]
 name = "expressive-liveset"
 version = "0.1.0"
-source = "git+ssh://git@github.com/swwallowws/expressive-liveset.git?rev=10b8fb5048f613c124d510388cc5eb731085341d#10b8fb5048f613c124d510388cc5eb731085341d"
+source = "git+ssh://git@github.com/swwallowws/expressive-liveset.git?rev=f96160ed01d47df811c7da4ca46836d30fbedf3a#f96160ed01d47df811c7da4ca46836d30fbedf3a"
 dependencies = [
  "flate2",
 ]

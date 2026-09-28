@@ -17,11 +17,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Convert a WAV recording to a MIDI file
+    /// Convert a WAV recording to a MIDI file (or a Live set)
     Convert {
         /// Input WAV (mono or stereo, any sample rate)
         input: PathBuf,
-        /// Output MIDI path
+        /// Output path: .mid for MIDI, .als for an Ableton Live 12 set
         #[arg(short, long, default_value = "out.mid")]
         output: PathBuf,
         /// CREPE model path (default: models/crepe-full.onnx or $VOXMPE_MODEL)
@@ -91,8 +91,16 @@ fn convert(
             n.start, n.end, n.pitch, n.cause
         );
     }
-    std::fs::write(&output, session.export_mid(&settings)?)
-        .with_context(|| format!("writing {}", output.display()))?;
+    // An .als output is a Live set (with the tuning loaded when not 12-TET).
+    let is_als = output
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("als"));
+    let bytes = if is_als {
+        session.export_als(&settings)?
+    } else {
+        session.export_mid(&settings)?
+    };
+    std::fs::write(&output, bytes).with_context(|| format!("writing {}", output.display()))?;
     eprintln!("{} notes -> {}", rendered.notes.len(), output.display());
     Ok(())
 }

@@ -162,10 +162,10 @@ impl Session {
     }
 
     /// An Ableton Live set whose clip carries each note's bend as Live's own
-    /// per-note pitch expression.
+    /// per-note pitch expression, with the tuning loaded when it isn't 12-TET.
     pub fn export_als(&self, s: &Settings) -> Result<Vec<u8>> {
         let name = self.name.trim_end_matches(".wav");
-        crate::als::als_bytes(&self.analysis(s)?, name, self.duration_s)
+        crate::als::als_bytes(&self.analysis(s)?, name, self.duration_s, s)
     }
 
     fn analysis(&self, s: &Settings) -> Result<Analysis> {

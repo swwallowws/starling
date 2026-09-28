@@ -58,6 +58,31 @@ fn convert_writes_a_midi_file() {
         .unwrap();
     assert!(st.success());
     assert!(midly::Smf::parse(&std::fs::read(&output).unwrap()).is_ok());
+
+    // An .als output is a Live set; in 53-EDO it carries the tuning and the
+    // A (440 Hz, 69 semitones) sits on its 53-EDO step: 40 steps above the
+    // 1/1 at middle C, and the 1/1 on MIDI note 60, so MIDI note 100.
+    let als = dir.join("out.als");
+    let st = Command::new(BIN)
+        .args([
+            "convert",
+            input.to_str().unwrap(),
+            "-o",
+            als.to_str().unwrap(),
+            "--tuning",
+            "53-edo",
+        ])
+        .status()
+        .unwrap();
+    assert!(st.success());
+    let mut xml = String::new();
+    std::io::Read::read_to_string(
+        &mut flate2::read::GzDecoder::new(&std::fs::read(&als).unwrap()[..]),
+        &mut xml,
+    )
+    .unwrap();
+    assert!(xml.contains("<TuningSystemName Value=\"53-edo\" />"));
+    assert!(xml.contains("<MidiKey Value=\"100\" />"), "A on its step");
     std::fs::remove_dir_all(dir).ok();
 }
 
