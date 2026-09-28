@@ -36,7 +36,7 @@ const play = iconButton(playEl, {
 iconButton($<HTMLButtonElement>("sample"));
 
 const { rail } = demoShell($("demo"), {
-  product: "voxmpe",
+  product: "Starling",
   title: "Turn a voice into notes.",
   intro: "A small slice of the studio, on the same engine.",
   steps: STEPS,

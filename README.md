@@ -1,6 +1,10 @@
-# voxmpe
+# Starling
 
-Sing, get expressive MPE MIDI. voxmpe tracks a sung phrase with CREPE, splits it into notes, and writes MIDI that keeps the voice's glides, vibrato and dynamics as per-note expression. Optionally snap it to any Scala tuning.
+simply sing.
+
+Formerly voxmpe; the code, crates and commands keep that name.
+
+Sing, get expressive MPE MIDI. Starling tracks a sung phrase with CREPE, splits it into notes, and writes MIDI that keeps the voice's glides, vibrato and dynamics as per-note expression. Optionally snap it to any Scala tuning.
 
 ## Studio
 

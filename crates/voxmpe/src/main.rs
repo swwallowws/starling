@@ -113,7 +113,7 @@ fn studio(
     }
     let (server, port) = voxmpe::server::bind(port)?;
     let url = format!("http://127.0.0.1:{port}/");
-    println!("voxmpe studio: {url}  (Ctrl+C to stop)");
+    println!("Starling studio: {url}  (Ctrl+C to stop)");
     if !no_open {
         let _ = std::process::Command::new("open").arg(&url).spawn();
     }

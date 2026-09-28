@@ -1,4 +1,6 @@
-# voxmpe (browser)
+# Starling (browser)
+
+simply sing. Formerly voxmpe.
 
 Sing, get expressive MPE MIDI, in the browser: https://swwallowws.github.io/voxmpe-web/
 
