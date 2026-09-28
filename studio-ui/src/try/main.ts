@@ -11,6 +11,7 @@ import { demoShell } from "../../vendor/design/demoshell.js";
 import { iconButton } from "../../vendor/design/iconbutton.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
 import { SAMPLE_NAME, browserDecode, sampleWav } from "./sample";
+import { clearMarkBehind } from "./clearmark";
 
 /** The sample take: a starling's song (Vrymaa, Freesound 737756, CC0), 2 octaves down. */
 const SAMPLE_URL = new URL("../../samples/starling-song.mp3", import.meta.url);
@@ -52,6 +53,14 @@ const { rail } = demoShell($("demo"), {
   primary: { toggle: () => play.toggle(), label: "play" },
   keys: { r: { run: () => record.toggle(), label: "record" } },
 });
+
+// The roll box's mark leaves out the words that would touch the empty roll's
+// sentence; redone when the box or the sentence moves or the fonts land.
+const rollBox = canvas.parentElement as HTMLElement;
+const emptyText = $("empty-text");
+const clearMark = () => clearMarkBehind(rollBox, emptyText);
+new ResizeObserver(clearMark).observe(rollBox);
+void document.fonts.ready.then(clearMark);
 
 const recorder = new Recorder();
 /** Made on the first take, after a click, so the page never starts audio on its own. */
@@ -162,6 +171,7 @@ async function open(r: LoadResp, lead = "") {
   player ??= new Player();
   await player.load(api.audioUrl());
   $("empty").hidden = true;
+  clearMark();
   smoothingRow.hidden = false;
   $("rec-status").textContent = ""; // the meter's last block can land after Stop
   rail.done("sing");
@@ -285,5 +295,6 @@ function startOver() {
   play.setPressed(false);
   canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
   $("empty").hidden = false;
+  clearMark();
   say("");
 }
