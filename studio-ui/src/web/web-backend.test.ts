@@ -69,6 +69,30 @@ describe("web backend", () => {
     ]);
   });
 
+  it("makes the Live 12 pair in the page: a .mid and the tuning's .ascl", async () => {
+    const { backend, downloads, studio } = await setup();
+    studio.render = async () => ({
+      notes: [{ pitch: 62, center: 62.04, start: 0, end: 0.5, velocity: 0.8, cause: "gap", bend: [[0, 0.04]], amp: [] }],
+      flags: "",
+    });
+    const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));
+    const scl = "53-EDO\n 53\n" + Array.from({ length: 52 }, (_, i) => ` ${(((i + 1) * 1200) / 53).toFixed(4)}`).join("\n") + "\n 2/1\n";
+    const r = await backend.exportFiles(take_id, { ...DEFAULT_SETTINGS, tuning_name: "53-edo", tuning_scl: scl }, ["mid", "live"]);
+    expect(downloads).toEqual(["a_studio.mid", "a_live12_53-edo.mid", "53-edo.ascl"]);
+    expect(r.files.map((f) => f.format)).toEqual(["mid", "mid", "ascl"]);
+    expect(r.note).toContain("load 53-edo.ascl");
+    expect(studio.calls.filter((c) => c.startsWith("export"))).toEqual(["export mid"]);
+  });
+
+  it("in 12-TET skips the Live .mid when the any-synth .mid is saved too", async () => {
+    const { backend, downloads } = await setup();
+    const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));
+    await backend.exportFiles(take_id, DEFAULT_SETTINGS, ["mid", "live"]);
+    expect(downloads).toEqual(["a_studio.mid"]);
+    await backend.exportFiles(take_id, DEFAULT_SETTINGS, ["live"]);
+    expect(downloads.at(-1)).toBe("a_live12.mid");
+  });
+
   it("rejects work on a take that is no longer open, like the server's 409", async () => {
     const { backend } = await setup();
     const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));

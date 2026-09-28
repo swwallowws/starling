@@ -178,6 +178,7 @@ let formats: Format[] = loadFormats(localStorageOrNull());
 const formatBoxes = [...document.querySelectorAll<HTMLInputElement>('input[name="format"]')];
 function syncFormats() {
   for (const box of formatBoxes) box.checked = formats.includes(box.value as Format);
+  $("live-hint").hidden = !formats.includes("live");
 }
 for (const box of formatBoxes) {
   box.addEventListener("change", () => {
@@ -212,7 +213,8 @@ function updateDrag() {
     drags.append(handle("Save again to drag the latest", false));
     return;
   }
-  for (const f of saved.files) {
+  // Files made in the page are blob: URLs, which Chrome won't drag out: they were downloaded.
+  for (const f of saved.files.filter((x) => !x.url.startsWith("blob:"))) {
     const h = handle(`Drag ${f.file_name}`, true);
     h.title = f.format === "als" ? "Drop into Live: the clip keeps each note's pitch curve" : "Drop into any DAW";
     h.addEventListener("dragstart", (e) => {
@@ -235,6 +237,7 @@ $("save").addEventListener("click", async () => {
     const r = await api.exportFiles(app.takeId, settings, formats);
     saved = { key: settingsKey(settings), files: r.files, takeId: app.takeId };
     $("saved-path").textContent = r.files.map((f) => f.path ?? f.file_name).join("  ");
+    if (r.note) say(r.note);
     $("reveal").hidden = !api.canReveal;
   } catch (e) {
     say((e as Error).message);

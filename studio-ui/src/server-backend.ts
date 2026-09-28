@@ -1,5 +1,7 @@
 import { ApiError, type Backend } from "./backend";
-import type { ExportResp, LoadResp, Preset, Rendered } from "./types";
+import { MIME, type EngineFormat } from "./export";
+import { liveFiles } from "./live-export";
+import type { ExportResp, LoadResp, Preset, Rendered, SavedFile } from "./types";
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -36,8 +38,24 @@ export const serverBackend: Backend = {
   },
   render: (takeId, settings) => call<Rendered>("/api/render", post({ take_id: takeId, settings })),
   async exportFiles(takeId, settings, formats) {
-    const r = await call<ExportResp>("/api/export", post({ take_id: takeId, settings, formats }));
-    return { files: r.files.map((f) => ({ ...f, url: `${location.origin}/api/exported.${f.format}` })) };
+    const engine = formats.filter((f): f is EngineFormat => f !== "live");
+    const files: SavedFile[] = [];
+    if (engine.length) {
+      const r = await call<ExportResp>("/api/export", post({ take_id: takeId, settings, formats: engine }));
+      files.push(...r.files.map((f) => ({ ...f, url: `${location.origin}/api/exported.${f.format}` })));
+    }
+    // The Live pair is made in the page from the rendered notes, and downloaded.
+    if (!formats.includes("live") || (!settings.tuning_scl && engine.includes("mid"))) return { files };
+    const rendered = await call<Rendered>("/api/render", post({ take_id: takeId, settings }));
+    const current = await serverBackend.currentTake();
+    const stem = (current?.info.name ?? "take").replace(/\.wav$/, "");
+    const live = liveFiles(rendered.notes, settings, stem);
+    for (const f of live.files) {
+      const url = URL.createObjectURL(new Blob([f.bytes], { type: MIME[f.kind] }));
+      Object.assign(document.createElement("a"), { href: url, download: f.file_name }).click();
+      files.push({ format: f.kind, path: null, file_name: f.file_name, url });
+    }
+    return { files, note: live.note };
   },
   reveal: () => call<void>("/api/reveal", { method: "POST" }),
   /** The take the studio already has open (e.g. `voxmpe studio take.wav`), or null. */

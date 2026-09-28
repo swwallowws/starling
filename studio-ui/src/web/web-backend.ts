@@ -1,7 +1,8 @@
 // The studio's engine in the page: takes in IndexedDB, analysis on pitch
 // workers, everything else in the studio worker.
 import { ApiError, type Backend, type Progress } from "../backend";
-import type { Format } from "../export";
+import { MIME } from "../export";
+import { liveFiles } from "../live-export";
 import type { LoadResp, SavedFile, TakeInfo } from "../types";
 import type { StudioClient } from "./clients";
 import { runShares, shareCount, shares, type PitchJob } from "./pool";
@@ -15,8 +16,6 @@ export interface WebDeps {
   objectUrl(bytes: BlobPart, type: string): string;
   download(url: string, fileName: string): void;
 }
-
-const MIME: Record<Format, string> = { mid: "audio/midi", als: "application/octet-stream" };
 
 export function createWebBackend(deps: WebDeps, canDragOut: boolean): Backend {
   let takeId = 0;
@@ -108,14 +107,24 @@ export function createWebBackend(deps: WebDeps, canDragOut: boolean): Backend {
       const { name } = current(id);
       const stem = name.replace(/\.wav$/, "");
       const files: SavedFile[] = [];
-      for (const format of formats) {
-        const bytes = await deps.studio.exportFile(settings, format);
-        const file_name = `${stem}_studio.${format}`;
+      const save = (format: SavedFile["format"], file_name: string, bytes: BlobPart) => {
         const url = deps.objectUrl(bytes, MIME[format]);
         deps.download(url, file_name);
         files.push({ format, path: null, file_name, url });
+      };
+      let note: string | undefined;
+      for (const format of formats) {
+        if (format === "live") {
+          // In 12-TET the Live file is the any-synth .mid again: skip it when that is saved too.
+          if (!settings.tuning_scl && formats.includes("mid")) continue;
+          const live = liveFiles((await deps.studio.render(settings)).notes, settings, stem);
+          for (const f of live.files) save(f.kind, f.file_name, f.bytes);
+          note = live.note;
+          continue;
+        }
+        save(format, `${stem}_studio.${format}`, await deps.studio.exportFile(settings, format));
       }
-      return { files };
+      return note ? { files, note } : { files };
     },
     reveal: async () => {},
     currentTake: async () => null,

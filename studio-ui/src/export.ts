@@ -1,13 +1,18 @@
 import type { Settings } from "./types";
 
-export type Format = "mid" | "als";
+/** What Save can write: MIDI for any MPE synth, MIDI + tuning for Live 12, a Live set. */
+export type Format = "mid" | "live" | "als";
 /** Every export format, in the order Save writes and shows them. */
-export const FORMATS: Format[] = ["mid", "als"];
-const MIME: Record<Format, string> = { mid: "audio/midi", als: "application/octet-stream" };
+export const FORMATS: Format[] = ["mid", "live", "als"];
+/** The formats the engine writes itself; "live" is made in the page. */
+export type EngineFormat = "mid" | "als";
+/** A saved file's kind: its extension. */
+export type FileKind = "mid" | "als" | "ascl";
+export const MIME: Record<FileKind, string> = { mid: "audio/midi", als: "application/octet-stream", ascl: "text/plain" };
 const KEY = "voxmpe.formats";
 
 /** Chrome's DownloadURL value for dragging `url` out as `fileName`. */
-export const downloadUrlData = (f: Format, fileName: string, url: string) => `${MIME[f]}:${fileName}:${url}`;
+export const downloadUrlData = (f: FileKind, fileName: string, url: string) => `${MIME[f]}:${fileName}:${url}`;
 export const settingsKey = (s: Settings) => JSON.stringify(s);
 
 /** The formats after ticking (`on`) or unticking `f`; the last one can't be unticked. */

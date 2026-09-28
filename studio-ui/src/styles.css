@@ -49,5 +49,5 @@ input[type="range"]:disabled { opacity: 0.4; }
 .drag { padding: calc(var(--space) / 2) var(--space); border: 1px dashed var(--line); color: var(--ink-mut); }
 .drag[draggable="true"] { color: var(--ink); border-color: var(--acc); cursor: grab; }
 #drags { display: inline-flex; gap: calc(var(--space) / 2); flex-wrap: wrap; }
-.formats { display: inline-flex; gap: var(--space); }
+.formats { display: inline-flex; flex-wrap: wrap; gap: var(--space); }
 @media (max-width: 700px) { main { grid-template-columns: 1fr; } #controls { border-left: 0; } }

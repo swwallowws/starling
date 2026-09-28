@@ -1,6 +1,6 @@
 // Promise wrappers around the two workers' message protocol.
 import { ApiError } from "../backend";
-import type { Format } from "../export";
+import type { EngineFormat } from "../export";
 import type { Preset, Rendered, Settings, TakeInfo } from "../types";
 import type { PitchJob } from "./pool";
 
@@ -34,7 +34,7 @@ export interface StudioClient {
   finish(results: Float32Array): Promise<{ info: TakeInfo; frames: Float32Array }>;
   restore(name: string, wav: ArrayBuffer, frames: Float32Array): Promise<TakeInfo>;
   render(settings: Settings): Promise<Rendered>;
-  exportFile(settings: Settings, format: Format): Promise<Uint8Array<ArrayBuffer>>;
+  exportFile(settings: Settings, format: EngineFormat): Promise<Uint8Array<ArrayBuffer>>;
   tunings(): Promise<Preset[]>;
 }
 

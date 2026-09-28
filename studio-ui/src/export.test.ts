@@ -27,6 +27,7 @@ describe("export", () => {
     expect(downloadUrlData("als", "take1_studio.als", "blob:http://x/1234")).toBe(
       "application/octet-stream:take1_studio.als:blob:http://x/1234",
     );
+    expect(downloadUrlData("ascl", "53-edo.ascl", "blob:http://x/5")).toBe("text/plain:53-edo.ascl:blob:http://x/5");
   });
   it("settings changes make a saved export stale", () => {
     expect(settingsKey(DEFAULT_SETTINGS)).not.toBe(settingsKey({ ...DEFAULT_SETTINGS, hold_ms: 91 }));
@@ -36,6 +37,8 @@ describe("export", () => {
 
 describe("formats", () => {
   it("ticks and unticks, in a fixed order", () => {
+    expect(nextFormats(["als"], "live", true)).toEqual(["live", "als"]);
+    expect(nextFormats(["mid", "live"], "mid", false)).toEqual(["live"]);
     expect(nextFormats(["mid"], "als", true)).toEqual(["mid", "als"]);
     expect(nextFormats(["als"], "mid", true)).toEqual(["mid", "als"]);
     expect(nextFormats(["mid", "als"], "mid", false)).toEqual(["als"]);

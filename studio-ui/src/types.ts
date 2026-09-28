@@ -72,7 +72,8 @@ export interface LoadResp {
 }
 
 export interface SavedFile {
-  format: "mid" | "als";
+  /** The file's kind (its extension): a .mid from either MIDI choice, an .als, or a Live tuning .ascl. */
+  format: "mid" | "als" | "ascl";
   /** Where the local studio saved it; null in the browser (it was downloaded). */
   path: string | null;
   file_name: string;
@@ -82,6 +83,8 @@ export interface SavedFile {
 
 export interface ExportResp {
   files: SavedFile[];
+  /** What to do with the files, when there is something to say (the Live tuning pair). */
+  note?: string;
 }
 
 /** A built-in tuning from GET /api/tunings. */
