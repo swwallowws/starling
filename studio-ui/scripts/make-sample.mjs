@@ -9,6 +9,7 @@
 //   ffmpeg -ss 0 -t 8.5 -i fs-737756.hp_shift2.wav -c:a pcm_s16le pick-fs-737756-0-8.5.hp_shift2.wav
 //
 // This script takes that last file (research/ stays local, it is gitignored),
+// keeps its last 6 s (2.5 to 8.5 s of the cut, picked by ear by Bengisu),
 // adds a short fade in and out, and encodes a small mono MP3, which every
 // browser's decodeAudioData reads. The try page decodes it and hands it to the
 // engine as a WAV, the same path as a recorded take.
@@ -18,7 +19,9 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const DURATION = 8.5;
+const START = 2.5;
+const END = 8.5;
+const DURATION = END - START;
 const FADE_IN = 0.03;
 const FADE_OUT = 0.3;
 
@@ -33,7 +36,7 @@ mkdirSync(dir, { recursive: true });
 const args = [
   "-hide_banner", "-loglevel", "error", "-y",
   "-i", src,
-  "-af", `afade=t=in:st=0:d=${FADE_IN},afade=t=out:st=${DURATION - FADE_OUT}:d=${FADE_OUT}`,
+  "-af", `atrim=start=${START}:end=${END},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${FADE_IN},afade=t=out:st=${DURATION - FADE_OUT}:d=${FADE_OUT}`,
   "-ac", "1", "-ar", "24000",
   "-c:a", "libmp3lame", "-b:a", "48k",
   "-map_metadata", "-1",
