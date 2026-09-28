@@ -7,6 +7,7 @@ footer.bar { border-top: var(--hairline); border-bottom: 0; }
 /* Headline style from the design system: Archivo at full width, heaviest weight, tight. */
 .embed .wordmark { display: none; }
 .wordmark { font-size: 18px; font-weight: 800; font-stretch: 125%; letter-spacing: -0.02em; margin-right: var(--space); }
+.wordmark-dot { color: var(--acc); } /* the accent full stop every tool's wordmark ends with */
 /* Header groups (take, tuning, status), divided by hairlines. */
 .group { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; padding-left: calc(var(--space) * 2); border-left: var(--hairline); }
 header select { width: 14em; }
