@@ -2,7 +2,7 @@
 // workers, everything else in the studio worker.
 import { ApiError, type Backend, type Progress } from "../backend";
 import { MIME } from "../export";
-import { liveFiles } from "../live-export";
+import { liveFiles, tuningStem } from "../live-export";
 import type { LoadResp, SavedFile, TakeInfo } from "../types";
 import type { StudioClient } from "./clients";
 import { runShares, shareCount, shares, type PitchJob } from "./pool";
@@ -122,7 +122,9 @@ export function createWebBackend(deps: WebDeps, canDragOut: boolean): Backend {
           note = live.note;
           continue;
         }
-        save(format, `${stem}_studio.${format}`, await deps.studio.exportFile(settings, format));
+        // Name the tuning when there is one, so a 53-EDO and a 12-TET save don't overwrite each other.
+        const tuned = settings.tuning_scl ? `_${tuningStem(settings.tuning_name)}` : "";
+        save(format, `${stem}_studio${tuned}.${format}`, await deps.studio.exportFile(settings, format));
       }
       return note ? { files, note } : { files };
     },

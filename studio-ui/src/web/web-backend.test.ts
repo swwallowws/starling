@@ -78,10 +78,19 @@ describe("web backend", () => {
     const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));
     const scl = "53-EDO\n 53\n" + Array.from({ length: 52 }, (_, i) => ` ${(((i + 1) * 1200) / 53).toFixed(4)}`).join("\n") + "\n 2/1\n";
     const r = await backend.exportFiles(take_id, { ...DEFAULT_SETTINGS, tuning_name: "53-edo", tuning_scl: scl }, ["mid", "live"]);
-    expect(downloads).toEqual(["a_studio.mid", "a_live12_53-edo.mid", "53-edo.ascl"]);
+    expect(downloads).toEqual(["a_studio_53-edo.mid", "a_live12_53-edo.mid", "53-edo.ascl"]);
     expect(r.files.map((f) => f.format)).toEqual(["mid", "mid", "ascl"]);
     expect(r.note).toContain("load 53-edo.ascl");
     expect(studio.calls.filter((c) => c.startsWith("export"))).toEqual(["export mid"]);
+  });
+
+  it("names the tuning in the studio files, so a 53-EDO and a 12-TET save don't collide", async () => {
+    const { backend, downloads } = await setup();
+    const { take_id } = await backend.uploadTake("a", new ArrayBuffer(8));
+    const scl = "53-EDO\n 53\n" + Array.from({ length: 52 }, (_, i) => ` ${(((i + 1) * 1200) / 53).toFixed(4)}`).join("\n") + "\n 2/1\n";
+    await backend.exportFiles(take_id, { ...DEFAULT_SETTINGS, tuning_name: "53-edo", tuning_scl: scl }, ["mid", "als"]);
+    await backend.exportFiles(take_id, DEFAULT_SETTINGS, ["als"]);
+    expect(downloads).toEqual(["a_studio_53-edo.mid", "a_studio_53-edo.als", "a_studio.als"]);
   });
 
   it("in 12-TET skips the Live .mid when the any-synth .mid is saved too", async () => {
