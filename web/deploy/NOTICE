@@ -2,5 +2,10 @@ Third-party components in this site
 
 CREPE pitch model: Copyright (c) 2018 Jong Wook Kim et al., MIT License.
 torchcrepe (model export): Copyright (c) 2020 Max Morrison, MIT License.
+Instrument sounds (assets/gm-*.sf3): made from GeneralUser GS 2.0.3 by
+  S. Christian Collins (http://www.schristiancollins.com), GeneralUser GS
+  License v2.0; trimmed and stored as SoundFont 3.
+spessasynth_lib 4.3.14, spessasynth_core and stb-vorbis (the synth that plays
+  them): by spessasus, Apache License 2.0.
 
 Rust crates compiled into voxmpe_web_bg.wasm (name version license):

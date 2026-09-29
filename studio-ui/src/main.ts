@@ -111,8 +111,10 @@ store.subscribe(() => {
 export let onNotesChanged: () => void = () => {};
 export function setOnNotesChanged(f: () => void) { onNotesChanged = f; }
 
-const player = new Player();
+const player = new Player(); // starts loading the instrument sounds now, well before Play
 setOnNotesChanged(() => player.setNotes(app.notes));
+// For scripted checks: the output level, and the player to listen in on.
+Object.assign(window, { starlingPlayer: player });
 
 async function togglePlay() {
   if (player.playing) player.stop();

@@ -22,13 +22,6 @@ class FakeBufferSource extends FakeNode {
   stop = vi.fn();
 }
 
-class FakeOscillator extends FakeNode {
-  type = "";
-  frequency = { setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() };
-  start = vi.fn();
-  stop = vi.fn();
-}
-
 class FakeAudioContext {
   currentTime = 0;
   destination = new FakeNode();
@@ -43,8 +36,8 @@ class FakeAudioContext {
     this.sources.push(source);
     return source;
   }
-  createOscillator() {
-    return new FakeOscillator();
+  createAnalyser() {
+    return Object.assign(new FakeNode(), { fftSize: 32, getFloatTimeDomainData: vi.fn() });
   }
 }
 
@@ -61,12 +54,17 @@ async function makePlayer(): Promise<{ player: Player; ctx: FakeAudioContext }> 
     },
   );
   vi.stubGlobal("fetch", vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })));
+  // The fake has no AudioWorklet, so the instruments never load; the voice is what's tested here.
+  vi.spyOn(console, "warn").mockImplementation(() => {});
   const player = new Player();
   await player.load("take.wav");
   return { player, ctx };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("Player", () => {
   it("stops on the source's natural end even if the audio clock reports a position just short of the buffer duration", async () => {

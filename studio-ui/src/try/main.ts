@@ -4,6 +4,7 @@ import "./try.css";
 import { backend as api } from "../backend-impl";
 import { drawRoll } from "../roll";
 import { Player } from "../player";
+import { prefetchSoundfont } from "../sound";
 import { Recorder, defaultTakeName } from "../recorder";
 import { DEFAULT_SETTINGS, type LoadResp, type Preset, type RNote, type Settings, type TakeInfo } from "../types";
 import { missingFeatures } from "../web/support";
@@ -96,6 +97,9 @@ paintSmoothing();
 
 const unsupported = api.kind === "web" && missingFeatures().length > 0;
 if (unsupported) say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
+// The instrument sounds (Electric Piano) download while the
+// visitor reads; the player that plays them comes with the first take.
+else prefetchSoundfont();
 
 /** Record and the sample buttons are off while a take is recorded or analyzed. */
 function setTakeSources(on: boolean) {
@@ -169,6 +173,7 @@ async function open(r: LoadResp, lead = "") {
   notes = [];
   playhead = null;
   player ??= new Player();
+  Object.assign(window, { starlingPlayer: player }); // for scripted checks, as in the studio
   await player.load(api.audioUrl());
   $("empty").hidden = true;
   clearMark();

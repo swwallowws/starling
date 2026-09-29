@@ -79,3 +79,13 @@ Third-party material it downloads or ships:
   (Max Morrison, 2020, MIT) by `scripts/export_crepe.py`; not committed.
 - Fonts in `studio-ui/vendor/design/fonts`: Archivo and JetBrains Mono, SIL Open
   Font License 1.1 (license texts next to the fonts).
+- The instrument sounds the studio plays its MIDI with,
+  `studio-ui/vendor/design/sound/gm.sf3`: made from GeneralUser GS 2.0.3 by
+  S. Christian Collins ([schristiancollins.com](http://www.schristiancollins.com)),
+  under the GeneralUser GS License v2.0, trimmed and stored as SoundFont 3. What
+  was changed, and the licence in full, are in
+  `studio-ui/vendor/design/sound/NOTICE`.
+- The synth that plays them, in `studio-ui/vendor/design/sound/spessasynth`
+  (the design system's shared build, synced with `--sound`): spessasynth_lib
+  4.3.14 and spessasynth_core by spessasus, Apache License 2.0 (`LICENSE` and
+  `NOTICE` there).

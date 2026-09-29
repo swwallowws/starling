@@ -13,7 +13,8 @@
     "build:web": "npm run build:wasm && node scripts/copy-model.mjs && tsc --noEmit -p tsconfig.web.json && vite build --mode web",
     "smoke:wasm": "node scripts/wasm-smoke.mjs",
     "preview:web": "vite preview --mode web --port 4318 --strictPort",
-    "e2e:web": "node scripts/e2e-web.mjs"
+    "e2e:web": "node scripts/e2e-web.mjs",
+    "check:sound": "node scripts/sound-check.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",
