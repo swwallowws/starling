@@ -1,5 +1,6 @@
 import { CHANNELS, Scheduler, VOLUME, BEND_RANGE, type SynthPort } from "./voices";
 import { PROGRAM, soundfontBytes } from "./sound";
+import { heardTime } from "../vendor/design/playhead.js";
 import type { WorkletSynthesizer } from "../vendor/design/sound/spessasynth/spessasynth_lib.min.js";
 import type { RNote } from "./types";
 
@@ -82,6 +83,12 @@ export class Player {
   }
 
   get playing() { return this.isPlaying; }
+
+  /** Where the listener is, for drawing the playhead: playing, the position less the output's
+   * delay (200 ms or more on Bluetooth), held at the start point until its sound arrives. */
+  heard() {
+    return this.isPlaying ? heardTime(this.position(), this.from, this.ctx) : this.from;
+  }
 
   position() {
     return this.isPlaying ? this.from + (this.ctx.currentTime - this.startedAt) : this.from;

@@ -139,7 +139,7 @@ async function togglePlay() {
 }
 
 function tickPlayhead() {
-  app.playhead = player.position();
+  app.playhead = player.heard();
   rollInput.follow(app.playhead);
   redraw();
   if (player.playing) requestAnimationFrame(tickPlayhead);

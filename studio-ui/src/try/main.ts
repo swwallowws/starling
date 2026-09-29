@@ -297,7 +297,7 @@ function stopPlayback() {
 function tick() {
   if (!player || !take) return;
   if (player.playing) {
-    playhead = player.position();
+    playhead = player.heard();
     draw();
     requestAnimationFrame(tick);
     return;
