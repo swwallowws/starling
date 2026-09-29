@@ -56,13 +56,15 @@ export const app = {
   info: null as TakeInfo | null,
   notes: [] as RNote[],
   playhead: null as number | null,
+  /** Where a drag holds the head while playing, drawn in place of the playhead. */
+  scrub: null as number | null,
   view: null as View | null,
   fit: null as View | null,
 };
 
 export function redraw() {
   if (!app.info) return;
-  const { view, fit } = drawRoll($<HTMLCanvasElement>("roll"), app.info, app.notes, app.playhead, rollInput.zoom());
+  const { view, fit } = drawRoll($<HTMLCanvasElement>("roll"), app.info, app.notes, app.scrub ?? app.playhead, rollInput.zoom());
   app.view = view;
   app.fit = fit;
   $("fit").hidden = !rollInput.zoomed();
@@ -71,9 +73,22 @@ export function redraw() {
 
 const rollInput = attachRollInput($<HTMLCanvasElement>("roll"), {
   views: () => (app.view && app.fit ? { view: app.view, fit: app.fit } : null),
+  playhead: () => app.scrub ?? app.playhead,
+  // Paused, a press or drag moves the place Play starts from. Playing, the head
+  // follows the pointer and the sound moves once, on release.
+  scrub(t) {
+    if (player.playing) app.scrub = t;
+    else app.playhead = t;
+    redraw();
+  },
   seek(t) {
+    app.scrub = null;
     app.playhead = t;
     if (player.playing) player.play(t);
+    redraw();
+  },
+  cancelScrub() {
+    app.scrub = null;
     redraw();
   },
   redraw,
@@ -350,6 +365,7 @@ export async function opened(r: LoadResp) {
   player.stop();
   rollInput.clear();
   app.playhead = 0;
+  app.scrub = null;
   await player.load(api.audioUrl());
   // A new take: the previous export no longer applies.
   $("saved-path").textContent = "";

@@ -1,4 +1,5 @@
-import { xToTime, type View } from "./coords";
+import { seekable } from "../vendor/design/playhead.js";
+import { onHead, pointerTime, type View } from "./coords";
 import type { ZoomKey } from "./keys";
 import { clampWin, follow, isFit, panBy, step, zoomAt, type Win } from "./zoom";
 
@@ -17,17 +18,27 @@ const DRAG_PX = 3;
 export interface RollInputDeps {
   /** What is on screen now and the whole fitted view, from the last draw. */
   views(): { view: View; fit: View } | null;
+  /** Where the playhead is drawn now, to tell a press on its line. */
+  playhead(): number | null;
+  /** The head is held at `t` by a press or drag (design playhead.js onScrub). */
+  scrub(t: number): void;
+  /** The press was let go at `t`: move the playback there. */
   seek(t: number): void;
+  /** The scrub was taken over or cancelled: show the real position again. */
+  cancelScrub(): void;
   redraw(): void;
 }
 
-/** Zoom and pan for the roll: pinch or Cmd/Ctrl+wheel zooms around the cursor,
- *  two-finger scroll or drag pans, a click seeks, double-click fits. Gestures
- *  set a target window and the view glides to it (or jumps, with reduced motion). */
+/** Zoom, pan and seeking for the roll: pinch or Cmd/Ctrl+wheel zooms around the
+ *  cursor, two-finger scroll pans, double-click fits. A click or drag moves the
+ *  playhead (the design system's seekable()); when zoomed in, a drag pans instead
+ *  unless it starts on the playhead line. Zoom gestures set a target window and
+ *  the view glides to it (or jumps, with reduced motion). */
 export function attachRollInput(canvas: HTMLCanvasElement, deps: RollInputDeps) {
   let cur: Win | null = null;
   let target: Win | null = null;
   let raf = 0;
+  let mode: "scrub" | "pan" | null = null;
   let press: { x: number; y: number; win: Win; dragged: boolean } | null = null;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -81,11 +92,20 @@ export function attachRollInput(canvas: HTMLCanvasElement, deps: RollInputDeps) 
     { passive: false },
   );
 
+  // Each press is either a scrub (the fitted view, or the playhead line when zoomed)
+  // or a pan (zoomed, anywhere else; a pan that never moved is a click and seeks).
+  // Registered before seekable() below, so the mode is set before it asks enabled().
   canvas.addEventListener("pointerdown", (e) => {
+    const v = deps.views();
     const b = base();
-    if (e.button !== 0 || !b) return;
-    press = { x: e.offsetX, y: e.offsetY, win: b, dragged: false };
-    canvas.setPointerCapture(e.pointerId);
+    mode = null;
+    press = null;
+    if (e.button > 0 || !v || !b) return;
+    if (!target || onHead(v.view, deps.playhead(), e.offsetX)) mode = "scrub";
+    else {
+      mode = "pan";
+      press = { x: e.offsetX, y: e.offsetY, win: b, dragged: false };
+    }
   });
   canvas.addEventListener("pointermove", (e) => {
     const v = deps.views();
@@ -94,17 +114,32 @@ export function attachRollInput(canvas: HTMLCanvasElement, deps: RollInputDeps) 
     const dy = e.offsetY - press.y;
     if (!press.dragged && Math.hypot(dx, dy) < DRAG_PX) return;
     press.dragged = true;
-    if (!target) return; // nothing to pan at the fitted view
     canvas.style.cursor = "grabbing";
     setTarget(panBy(press.win, v.fit, -dx / v.view.width, dy / v.view.height), false);
   });
-  canvas.addEventListener("pointerup", (e) => {
-    const v = deps.views();
-    if (press && !press.dragged && v) deps.seek(xToTime(v.view, e.offsetX));
+  const endPress = () => {
+    mode = null;
     press = null;
     canvas.style.cursor = target ? "grab" : "";
+  };
+  seekable(canvas, {
+    toTime(clientX, rect) {
+      const v = deps.views();
+      return v ? pointerTime(v.view, clientX, rect.left, rect.width, v.fit.t1) : 0;
+    },
+    enabled: () => mode !== null,
+    onScrub(t) {
+      if (mode === "scrub") deps.scrub(t);
+    },
+    onSeek(t) {
+      if (mode === "scrub" || (mode === "pan" && !press?.dragged)) deps.seek(t);
+      endPress();
+    },
+    onCancel() {
+      if (mode === "scrub") deps.cancelScrub();
+      endPress();
+    },
   });
-  canvas.addEventListener("pointercancel", () => { press = null; });
   canvas.addEventListener("dblclick", () => reset());
 
   function reset() {
@@ -127,7 +162,7 @@ export function attachRollInput(canvas: HTMLCanvasElement, deps: RollInputDeps) 
     /** While playing, page the view along with the playhead. */
     follow(playhead: number) {
       const f = fit();
-      if (!target || !f || press?.dragged) return;
+      if (!target || !f || mode !== null) return; // not while a press holds the view or the head
       const next = follow(target, f, playhead);
       if (next !== target) setTarget(next, true);
     },
