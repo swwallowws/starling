@@ -55,18 +55,12 @@ history needs rewriting.
 
 ## Dependencies
 
-- [ ] **`expressive-liveset` is private.** `crates/voxmpe/Cargo.toml` pulls it as a
-  git dependency over SSH
-  (`ssh://git@github.com/swwallowws/expressive-liveset.git`, pinned to rev
-  `28d48a713b26e61cd1e08274a673ae741d32f435`), and `.cargo/config.toml` sets
-  `git-fetch-with-cli = true` so the system git's SSH key is used. It is not
-  optional: `crates/voxmpe/src/als.rs` uses it for the `.als` writer, and
-  `voxmpe-web` compiles it into the browser build too. Until it is public,
-  strangers cannot build any crate here. Once public, the SSH URL still needs a
-  GitHub SSH key; switching to `https://github.com/...` lets anyone fetch it.
-  Before making it public, note it has `license = "MIT"` in `Cargo.toml` but no
-  `LICENSE` file, and ships `templates/live12-base.als.xml`, a Live set
-  template: check that template is fine to redistribute.
+- [x] **`expressive-liveset` is public (2026-09-29).** `crates/voxmpe/Cargo.toml`
+  pulls it over HTTPS (`https://github.com/swwallowws/expressive-liveset.git`,
+  rev `034837d72666c89493c6471af3a342cbe6d1d8c4`, the first public commit, same
+  code as the earlier private pin `f96160e`), so anyone can build without an SSH
+  key. The `git-fetch-with-cli` setting is gone from `.cargo/config.toml`. It has
+  an MIT `LICENSE` and a clean, re-saved Live template.
 
 ## Tests (2026-09-26)
 
