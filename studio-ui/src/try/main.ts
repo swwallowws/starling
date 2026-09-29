@@ -13,6 +13,8 @@ import { iconButton } from "../../vendor/design/iconbutton.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
 import { SAMPLE_NAME, browserDecode, sampleWav } from "./sample";
 import { clearMarkBehind } from "./clearmark";
+import { seekable } from "../../vendor/design/playhead.js";
+import { startPoint } from "../synth";
 
 /** The sample take: a starling's song (Vrymaa, Freesound 737756, CC0), 2 octaves down. */
 const SAMPLE_URL = new URL("../../samples/starling-song.mp3", import.meta.url);
@@ -69,6 +71,8 @@ let player: Player | null = null;
 let take: { id: number; info: TakeInfo } | null = null;
 let notes: RNote[] = [];
 let playhead: number | null = null;
+/** Where a drag holds the head while playing, drawn in place of the playhead. */
+let dragAt: number | null = null;
 let presets: Preset[] | null = null;
 let tuning: Preset | null = null;
 let smoothing = DEFAULT_SETTINGS.smoothing;
@@ -83,8 +87,31 @@ function paintSmoothing() {
 }
 
 function draw() {
-  if (take) drawRoll(canvas, take.info, notes, playhead);
+  if (take) drawRoll(canvas, take.info, notes, dragAt ?? playhead);
 }
+
+// A click, tap or drag on the roll moves the playhead there. Paused, it just
+// moves and Play starts from it. Playing, the head follows the pointer and the
+// sound moves once, on release.
+seekable(canvas, {
+  duration: () => take?.info.duration_s ?? 0,
+  enabled: () => take !== null && player !== null,
+  onScrub(t) {
+    if (player?.playing) dragAt = t;
+    else playhead = t;
+    draw();
+  },
+  onSeek(t) {
+    dragAt = null;
+    playhead = t;
+    if (player?.playing) player.play(t);
+    draw();
+  },
+  onCancel() {
+    dragAt = null;
+    draw();
+  },
+});
 window.addEventListener("resize", draw);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
 
@@ -172,6 +199,7 @@ async function open(r: LoadResp, lead = "") {
   take = { id: r.take_id, info: r.info };
   notes = [];
   playhead = null;
+  dragAt = null;
   player ??= new Player();
   Object.assign(window, { starlingPlayer: player }); // for scripted checks, as in the studio
   await player.load(api.audioUrl());
@@ -256,7 +284,7 @@ function startPlayback() {
     return;
   }
   manualStop = false;
-  player.play(0);
+  player.play(startPoint(playhead ?? 0, take.info.duration_s));
   requestAnimationFrame(tick);
 }
 
@@ -290,6 +318,7 @@ function startOver() {
   take = null;
   notes = [];
   playhead = null;
+  dragAt = null;
   tuning = null;
   tuningInputs[0].checked = true;
   smoothing = DEFAULT_SETTINGS.smoothing;

@@ -1,3 +1,4 @@
+import { clampTime } from "../vendor/design/playhead.js";
 import type { RNote, TakeInfo } from "./types";
 
 export interface View { t0: number; t1: number; pLo: number; pHi: number; width: number; height: number; }
@@ -33,4 +34,18 @@ export function fitView(info: TakeInfo, notes: RNote[], width: number, height: n
 
 export const timeToX = (v: View, t: number) => ((t - v.t0) / (v.t1 - v.t0)) * v.width;
 export const xToTime = (v: View, x: number) => v.t0 + (x / v.width) * (v.t1 - v.t0);
-export const pitchToY = (v: View, p: number) => v.height - ((p - v.pLo) / (v.pHi - v.pLo)) * v.height;
+/** The time under a pointer at `clientX` over a roll box that starts at `left` and is
+ *  `width` CSS px wide, showing view `v`, clamped to the take (0 to `end`). */
+export function pointerTime(v: View, clientX: number, left: number, width: number, end: number): number {
+  if (!(width > 0)) return clampTime(v.t0, end);
+  return clampTime(xToTime(v, ((clientX - left) / width) * v.width), end);
+}
+
+/** Half the playhead line's grab band (px), as playhead.css draws it. */
+export const HEAD_GRAB = 6;
+
+/** Whether a press at `x` (px in the view) lands on the playhead line. */
+export const onHead = (v: View, playhead: number | null, x: number) =>
+  playhead !== null && Math.abs(timeToX(v, playhead) - x) <= HEAD_GRAB;
+
+export const pitchToY =(v: View, p: number) => v.height - ((p - v.pLo) / (v.pHi - v.pLo)) * v.height;

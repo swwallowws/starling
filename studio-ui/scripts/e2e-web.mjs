@@ -96,6 +96,20 @@ try {
   await waitNotes();
   if ((await page.evaluate(() => document.body.dataset.analysis)) !== "cached") fail("reopening should use the cache");
   console.log("reopened from cache:", name);
+
+  // Dragging the playhead while paused moves where Play starts (design playhead.js).
+  const box = await (await page.$("#roll")).boundingBox();
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width * 0.2, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.35, y, { steps: 5 });
+  await page.mouse.move(box.x + box.width * 0.5, y, { steps: 5 });
+  await page.mouse.up();
+  await page.click("#play");
+  const [at, total] = await page.evaluate(() => [window.starlingPlayer.position(), window.starlingPlayer.buffer.duration]);
+  await page.click("#play");
+  if (Math.abs(at - total * 0.5) > 0.25) fail(`drag to the middle should start Play there: at ${at} of ${total}`);
+  console.log(`playhead drag: Play started at ${at.toFixed(2)} of ${total.toFixed(2)} s`);
   if (errors.length) fail(`page errors: ${errors.join("; ")}`);
 
   // A browser without IndexedDB gets a plain message, not a blank page.
