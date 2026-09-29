@@ -85,6 +85,7 @@ Third-party material it downloads or ships:
   under the GeneralUser GS License v2.0, trimmed and stored as SoundFont 3. What
   was changed, and the licence in full, are in
   `studio-ui/vendor/design/sound/NOTICE`.
-- The synth that plays them, in `studio-ui/vendor/spessasynth`: spessasynth_lib
+- The synth that plays them, in `studio-ui/vendor/design/sound/spessasynth`
+  (the design system's shared build, synced with `--sound`): spessasynth_lib
   4.3.14 and spessasynth_core by spessasus, Apache License 2.0 (`LICENSE` and
   `NOTICE` there).

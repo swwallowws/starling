@@ -1,4 +1,4 @@
-// The part of spessasynth_lib 4.3.14 that Starling's player uses (see NOTICE).
+// The part of spessasynth_lib 4.3.14 that the tools call (see NOTICE).
 export interface SynthMethodOptions { time: number; }
 
 export class WorkletSynthesizer {

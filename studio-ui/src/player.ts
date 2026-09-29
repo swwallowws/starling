@@ -1,11 +1,11 @@
 import { CHANNELS, Scheduler, VOLUME, BEND_RANGE, type SynthPort } from "./voices";
 import { loadProgram, soundfontBytes } from "./sound";
-import type { WorkletSynthesizer } from "../vendor/spessasynth/spessasynth_lib.min.js";
+import type { WorkletSynthesizer } from "../vendor/design/sound/spessasynth/spessasynth_lib.min.js";
 import type { RNote } from "./types";
 
 type Mode = "voice" | "midi" | "both";
 
-const PROCESSOR = new URL("../vendor/spessasynth/spessasynth_processor.min.js", import.meta.url).href;
+const PROCESSOR = new URL("../vendor/design/sound/spessasynth/spessasynth_processor.min.js", import.meta.url).href;
 /** How far ahead the notes are handed to the synth (s), and how often (ms). A hidden tab's
  * timers slow to about once a second, so it looks further ahead. */
 const AHEAD = 0.25;
@@ -51,7 +51,7 @@ export class Player {
   private async initSynth() {
     if (!this.ctx.audioWorklet) throw new Error("no AudioWorklet");
     const [lib, bytes] = await Promise.all([
-      import("../vendor/spessasynth/spessasynth_lib.min.js"),
+      import("../vendor/design/sound/spessasynth/spessasynth_lib.min.js"),
       soundfontBytes(),
       this.ctx.audioWorklet.addModule(PROCESSOR),
     ]);
