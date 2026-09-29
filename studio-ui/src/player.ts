@@ -1,5 +1,5 @@
 import { CHANNELS, Scheduler, VOLUME, BEND_RANGE, type SynthPort } from "./voices";
-import { loadProgram, soundfontBytes } from "./sound";
+import { PROGRAM, soundfontBytes } from "./sound";
 import type { WorkletSynthesizer } from "../vendor/design/sound/spessasynth/spessasynth_lib.min.js";
 import type { RNote } from "./types";
 
@@ -28,7 +28,6 @@ export class Player {
   private synth: WorkletSynthesizer | null = null;
   private sched: Scheduler | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private program = loadProgram();
   private notes: RNote[] = [];
   private startedAt = 0;
   private from = 0;
@@ -62,7 +61,7 @@ export class Player {
     for (const ch of CHANNELS) {
       synth.pitchWheelRange(ch, BEND_RANGE);
       synth.controllerChange(ch, 7, VOLUME);
-      synth.programChange(ch, this.program);
+      synth.programChange(ch, PROGRAM);
     }
     const at = (time: number) => ({ time });
     const port: SynthPort = {
@@ -91,12 +90,6 @@ export class Player {
   setMode(m: Mode) {
     this.voiceBus.gain.value = m === "midi" ? 0 : 1;
     this.midiBus.gain.value = m === "voice" ? 0 : MIDI_GAIN;
-  }
-
-  /** The General MIDI program the notes play with; notes already sounding keep theirs. */
-  setProgram(program: number) {
-    this.program = program;
-    for (const ch of CHANNELS) this.synth?.programChange(ch, program);
   }
 
   /** The output's peak right now (0 to 1): 0 means silence. */

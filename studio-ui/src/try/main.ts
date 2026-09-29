@@ -97,7 +97,7 @@ paintSmoothing();
 
 const unsupported = api.kind === "web" && missingFeatures().length > 0;
 if (unsupported) say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
-// The instrument sounds (the studio's remembered choice, else Square Lead) download while the
+// The instrument sounds (Electric Piano) download while the
 // visitor reads; the player that plays them comes with the first take.
 else prefetchSoundfont();
 

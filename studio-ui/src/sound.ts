@@ -1,5 +1,5 @@
 // The sounds MIDI playback uses: the shared General MIDI bank (vendor/design/sound/gm.sf3,
-// GeneralUser GS; credit in vendor/design/sound/NOTICE), and the instruments offered for a sung line.
+// GeneralUser GS; credit in vendor/design/sound/NOTICE), and the instrument a sung line plays with.
 
 /** Fetched once and kept in the Cache API. The build names the file by its content hash, so a
  * new bank is a new URL and replaces the old entry. */
@@ -31,33 +31,5 @@ export function prefetchSoundfont() {
   soundfontBytes().catch(() => {});
 }
 
-/** General MIDI programs (0-based) for a sung line: synths, which read as the melody without
- * sounding like a second voice, then one keyboard. Square Lead is the default: a fast attack and
- * no vibrato of its own (the pitch curve brings the vibrato), and its layers bend at most 35 cents
- * on the attack, where Saw Lead layers a saw that sweeps 4 semitones into every note. In this bank
- * Chiffer Lead plays the Square Lead preset and Warm Pad, Fantasia, Halo and Sweep Pad play
- * Polysynth, so each is listed once. */
-export const INSTRUMENTS = [
-  { program: 80, name: "Square Lead" },
-  { program: 81, name: "Saw Lead" },
-  { program: 90, name: "Polysynth" },
-  { program: 4, name: "Electric Piano" },
-] as const;
-
-/** A remembered program not in the list (an older choice such as Voice Oohs) falls back to this. */
-export const DEFAULT_PROGRAM = 80;
-const KEY = "starling.instrument";
-
-/** The remembered instrument, or the default. */
-export function loadProgram(): number {
-  try {
-    const saved = localStorage.getItem(KEY);
-    const p = Number(saved);
-    if (saved !== null && INSTRUMENTS.some((i) => i.program === p)) return p;
-  } catch { /* storage blocked */ }
-  return DEFAULT_PROGRAM;
-}
-
-export function saveProgram(program: number) {
-  try { localStorage.setItem(KEY, String(program)); } catch { /* storage blocked */ }
-}
+/** The one General MIDI program (0-based) the notes play with: Electric Piano. */
+export const PROGRAM = 4;
