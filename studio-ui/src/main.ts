@@ -15,6 +15,7 @@ import { startPoint } from "./synth";
 import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
 import { Player } from "./player";
+import { INSTRUMENTS, loadProgram, saveProgram } from "./sound";
 import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
 import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
 import type { SavedFile } from "./types";
@@ -111,8 +112,20 @@ store.subscribe(() => {
 export let onNotesChanged: () => void = () => {};
 export function setOnNotesChanged(f: () => void) { onNotesChanged = f; }
 
-const player = new Player();
+const player = new Player(); // starts loading the instrument sounds now, well before Play
 setOnNotesChanged(() => player.setNotes(app.notes));
+// For scripted checks: the output level, and the player to listen in on.
+Object.assign(window, { starlingPlayer: player });
+
+// The instrument the notes play with, remembered in this browser.
+const instrumentSel = $<HTMLSelectElement>("instrument");
+for (const i of INSTRUMENTS) instrumentSel.add(new Option(i.name, String(i.program)));
+instrumentSel.value = String(loadProgram());
+instrumentSel.addEventListener("change", () => {
+  const program = Number(instrumentSel.value);
+  saveProgram(program);
+  player.setProgram(program);
+});
 
 async function togglePlay() {
   if (player.playing) player.stop();
