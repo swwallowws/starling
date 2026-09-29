@@ -4,7 +4,7 @@
 //   - the pitch of what sounds follows each note's pitch curve (f0 of the recorded output vs the
 //     automation, in cents),
 //   - a seek jumps there and plays the note under the new playhead, and Stop goes quiet.
-// Usage: node scripts/sound-check.mjs [--url http://localhost:4318/] [--program 53]
+// Usage: node scripts/sound-check.mjs [--url http://localhost:4318/] [--program 80]
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,7 @@ import { wav16 } from "./wav.mjs";
 const args = process.argv.slice(2);
 const flag = (name, dflt) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : dflt; };
 const URL_ = flag("--url", "http://localhost:4318/");
-const PROGRAM = flag("--program", "53");
+const PROGRAM = flag("--program", "80");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const dir = fileURLToPath(new URL("../.e2e/sound/", import.meta.url));
 rmSync(dir, { recursive: true, force: true });

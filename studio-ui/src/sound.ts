@@ -31,19 +31,21 @@ export function prefetchSoundfont() {
   soundfontBytes().catch(() => {});
 }
 
-/** General MIDI programs (0-based) that suit a sung line. In this bank Choir Aahs plays the
- * Voice Oohs samples, so only Voice Oohs is listed. */
+/** General MIDI programs (0-based) for a sung line: synths, which read as the melody without
+ * sounding like a second voice, then one keyboard. Square Lead is the default: a fast attack and
+ * no vibrato of its own (the pitch curve brings the vibrato), and its layers bend at most 35 cents
+ * on the attack, where Saw Lead layers a saw that sweeps 4 semitones into every note. In this bank
+ * Chiffer Lead plays the Square Lead preset and Warm Pad, Fantasia, Halo and Sweep Pad play
+ * Polysynth, so each is listed once. */
 export const INSTRUMENTS = [
-  { program: 53, name: "Voice Oohs" },
-  { program: 73, name: "Flute" },
-  { program: 71, name: "Clarinet" },
-  { program: 68, name: "Oboe" },
-  { program: 40, name: "Violin" },
-  { program: 42, name: "Cello" },
+  { program: 80, name: "Square Lead" },
+  { program: 81, name: "Saw Lead" },
+  { program: 90, name: "Polysynth" },
   { program: 4, name: "Electric Piano" },
 ] as const;
 
-export const DEFAULT_PROGRAM = 53;
+/** A remembered program not in the list (an older choice such as Voice Oohs) falls back to this. */
+export const DEFAULT_PROGRAM = 80;
 const KEY = "starling.instrument";
 
 /** The remembered instrument, or the default. */
