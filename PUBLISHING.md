@@ -22,9 +22,8 @@ history needs rewriting.
   the word `password` as an input type in `studio-ui/src/keys.ts`, and colour
   "tokens" in the design system.
 - [x] **No absolute home paths** (`/Users/...`) in any commit.
-- [ ] **Author identity becomes public.** All 62 commits have author and committer
-  `Bikem <bengisuozaydin@gmail.com>`. Fine if that is intended; otherwise it
-  needs a history rewrite (see Options below).
+- [x] **Author identity becomes public.** Every commit has author and committer
+  `Bikem <bengisuozaydin@gmail.com>`. Intended (decided 2026-09-30).
 
 ## Current tree
 
@@ -44,12 +43,11 @@ history needs rewriting.
   since `b42a4fc`). `scripts/deploy-web.sh` copies it into the public
   `starling-web` site repo, so the live site keeps the old text until the next
   deploy.
-- [ ] **Stale privacy notes in the plans.**
-  `docs/superpowers/plans/2026-09-25-voxmpe-web.md` line 22 says "The voxmpe
-  source stays private" and line 2693 quotes the "All rights reserved" line
-  (added in `71b6c1f`). The plan docs also name you and describe working
-  instructions. Harmless, but you may want to drop or edit `docs/superpowers/`
-  before publishing.
+- [x] **Stale privacy notes in the plans.** `docs/superpowers/` (plans that said
+  "the source stays private" and described working instructions) is removed
+  from the tree (2026-09-30); it stays in history, which is fine.
+- [x] **No em dashes in prose** (`MICROTONAL_SPEC.md`'s 46, 2026-09-30).
+- [x] **Old branch** `showcase-embed` deleted on GitHub (merged).
 - [x] `studio-ui/vendor/design/` is your own shared design system (v1.0.0), so it
   falls under this repo's MIT licence.
 
