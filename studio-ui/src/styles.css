@@ -6,8 +6,10 @@ body { margin: 0; background: var(--ground); color: var(--ink); font-family: var
 .bar { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; padding: var(--space) calc(var(--space) * 2); background: var(--ground-2); border-bottom: var(--hairline); }
 footer.bar { border-top: var(--hairline); border-bottom: 0; }
 /* Headline style from the design system: Archivo at full width, heaviest weight, tight. */
-.embed .wordmark { display: none; }
-.wordmark { font-size: 18px; font-weight: 800; font-stretch: 125%; letter-spacing: -0.02em; margin-right: var(--space); }
+.embed .wordmark, .embed .tagline { display: none; }
+.wordmark { font-size: 18px; font-weight: 800; font-stretch: 125%; letter-spacing: -0.02em; }
+/* The line after the name, as in Coming Undone's header. */
+.tagline { color: var(--ink-mut); margin-right: var(--space); white-space: nowrap; }
 .wordmark-dot { color: var(--acc); } /* the accent full stop every tool's wordmark ends with */
 /* Header groups (take, tuning, status), divided by hairlines. */
 .group { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; padding-left: calc(var(--space) * 2); border-left: var(--hairline); }
