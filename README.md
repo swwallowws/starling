@@ -10,18 +10,18 @@ Sing, get expressive MPE MIDI. Starling tracks a sung phrase with CREPE, splits 
 
     voxmpe studio
 
-Opens a local page where you record (or open) a take, move the note-split settings while listening, and save or drag the `.mid` into Ableton Live. Recordings and exports go to `takes/` in the current folder (`--takes DIR` to change it).
+Opens a local page where you record (or open) a take, move the note-split settings while listening, and save or drag the `.mid` into Ableton Live. Takes and exports go to `takes/` in the current folder (`--takes DIR` to change it).
 
 ## CLI
 
     voxmpe convert take.wav -o take.mid --legato --hold-ms 150
 
-The studio's "Copy as flags" gives the exact flags for the settings you chose.
+Each flag is one of the studio's settings (`--hold-ms` is Hold (small moves), `--legato` the Legato button); `voxmpe convert --help` lists them all.
 
 ## Browser studio
 
 The same studio, running entirely in the browser with CREPE tiny (2 MB): no
-install, recordings kept in the browser.
+install, takes kept in the browser.
 
     python scripts/export_crepe.py tiny     # once: models/crepe-tiny.onnx
     cd studio-ui && npm install
@@ -65,7 +65,7 @@ without access to it.
 - `crates/voxmpe-web`: the engine for the browser studio's Web Workers.
 - `studio-ui`: the studio's browser UI, for both the local and the browser studio.
 
-No recordings, takes or model weights are in this repo: takes stay in `takes/`
+No takes or model weights are in this repo: takes stay in `takes/`
 (or in the browser), and the model is exported locally.
 
 ## License
