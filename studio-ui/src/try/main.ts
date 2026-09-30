@@ -50,12 +50,21 @@ const { rail } = demoShell($("demo"), {
   title: "Turn a voice into notes.",
   intro: "A small slice of the studio, on the same engine.",
   steps: STEPS,
-  full: { label: "studio", href: "../" },
-  endText: "That's the idea. There's more inside: every setting, more tunings, and .mid or Ableton Live export.",
+  // The rail's title stays a plain "Try it out!"; the way to the full studio comes at
+  // the end of the tour, as in every demo.
+  endText: "That was the first step. ",
   onReset: startOver,
-  primary: { toggle: () => play.toggle(), label: "play" },
-  keys: { r: { run: () => record.toggle(), label: "record" } },
+  // Space plays and R records; no key legend under the rail.
+  primary: { toggle: () => play.toggle() },
+  keys: { r: () => record.toggle() },
 });
+// After the tour: the full studio, in a new tab so the demo stays where it is.
+{
+  const full = Object.assign(document.createElement("a"), {
+    className: "full-link", href: "../", target: "_blank", rel: "noopener", textContent: "Full version ↗",
+  });
+  document.querySelector(".steprail-end")?.append(full);
+}
 
 // The roll box's mark leaves out the words that would touch the empty roll's
 // sentence; redone when the box or the sentence moves or the fonts land.

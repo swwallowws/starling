@@ -23,11 +23,7 @@
            stays under this wrapper, and the box asks for a mark of its own,
            a grid centred on the box and clipped by its border. -->
       <div class="try-body" data-demoshell-nomark>
-      <p id="message" class="try-message" role="status"></p>
-      <div class="try-stage" data-demoshell-mark>
-        <canvas id="roll"></canvas>
-        <p id="empty" class="try-empty"><span id="empty-text">The piano roll shows up here after a take. No mic handy? <button id="sample-link" type="button" class="try-link">Try a starling's song.</button></span></p>
-      </div>
+      <!-- Record and Play first, top-left of the product (design 1.15), then the roll. -->
       <div class="try-toolbar">
         <div class="try-toolbar-transport">
           <button id="record" type="button" data-icon="record" data-toggle data-pressed-icon="stop" data-key="r"></button>
@@ -45,6 +41,11 @@
           <span id="smoothing-val">0%</span>
         </label>
       </div>
+      <div class="try-stage" data-demoshell-mark>
+        <canvas id="roll"></canvas>
+        <p id="empty" class="try-empty"><span id="empty-text">The piano roll shows up here after a take. No mic handy? <button id="sample-link" type="button" class="try-link">Try a starling's song.</button></span></p>
+      </div>
+      <p id="message" class="try-message" role="status"></p>
       <p class="try-fine">Takes stay in this browser and are never uploaded. Starling song: <a href="https://freesound.org/s/737756/" target="_blank" rel="noopener">Vrymaa, Freesound</a>, CC0.</p>
       </div>
     </div>

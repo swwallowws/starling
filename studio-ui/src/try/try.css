@@ -22,7 +22,7 @@
 /* One tidy toolbar under the roll: transport icon buttons on the left, the
    tuning switch next to them, and the smoothing control pushed to the right.
    Wraps cleanly to two rows on phones (smoothing takes its own full row). */
-.try-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space) calc(var(--space) * 2); margin-top: var(--space); }
+.try-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space) calc(var(--space) * 2); margin-bottom: var(--space); }
 .try-toolbar-transport { display: flex; align-items: center; gap: calc(var(--space) / 2); }
 
 /* The smoothing control: the studio's own Expression > Smoothing slider,
