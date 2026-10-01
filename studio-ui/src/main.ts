@@ -233,7 +233,7 @@ function updateDrag() {
   // Files made in the page are blob: URLs, which Chrome won't drag out: they were downloaded.
   for (const f of saved.files.filter((x) => !x.url.startsWith("blob:"))) {
     const h = handle(`Drag ${f.file_name}`, true);
-    h.title = f.format === "als" ? "Drop into Live: the clip keeps each note's pitch curve" : "Drop into any DAW";
+    h.title = f.format === "als" ? "Drop into Ableton Live: the clip keeps each note's pitch curve" : "Drop into any music software";
     h.addEventListener("dragstart", (e) => {
       e.dataTransfer?.setData("DownloadURL", downloadUrlData(f.format, f.file_name, f.url));
     });
