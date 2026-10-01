@@ -291,7 +291,7 @@ let tuningView: TuningView = { active: null, custom: null, error: null };
 function showTuning(v: TuningView) {
   tuningView = v;
   tuningSel.textContent = "";
-  tuningSel.add(new Option("12-TET", ""));
+  tuningSel.add(new Option("Standard (12-TET)", ""));
   for (const p of presets) tuningSel.add(new Option(p.name, `preset:${p.id}`));
   // A remembered built-in tuning starts as `custom` too; list it only once.
   if (v.custom && !presets.some((p) => p.scl === v.custom!.scl)) tuningSel.add(new Option(v.custom.name, "custom"));

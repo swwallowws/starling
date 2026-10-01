@@ -3,9 +3,9 @@ import { DEFAULT_SETTINGS, LEGATO, type Settings } from "./types";
 
 type NumKey = "hold_ms" | "jump_hold_ms" | "jump_cents" | "gap_ms" | "split_cents";
 const SLIDERS: { key: NumKey; label: string; min: number; max: number; step: number; unit: string }[] = [
-  { key: "hold_ms", label: "Hold (small moves)", min: 30, max: 400, step: 5, unit: "ms" },
-  { key: "jump_hold_ms", label: "Hold (big jumps)", min: 30, max: 400, step: 5, unit: "ms" },
-  { key: "jump_cents", label: "Big jump from", min: 100, max: 1200, step: 10, unit: "cents" },
+  { key: "hold_ms", label: "New note after (small step)", min: 30, max: 400, step: 5, unit: "ms" },
+  { key: "jump_hold_ms", label: "New note after (big leap)", min: 30, max: 400, step: 5, unit: "ms" },
+  { key: "jump_cents", label: "Big leap from", min: 100, max: 1200, step: 10, unit: "cents" },
   { key: "gap_ms", label: "Gap that splits", min: 30, max: 400, step: 5, unit: "ms" },
   { key: "split_cents", label: "Pitch move that splits", min: 30, max: 300, step: 5, unit: "cents" },
 ];

@@ -17,7 +17,7 @@ export function micMessage(err: unknown): string {
 /** The rail's steps, in order. */
 export const STEPS = [
   { id: "sing", label: "Sing anything", hint: "Up to about 10 seconds. Stop whenever you like. No mic? Try a starling's song." },
-  { id: "midi", label: "See it become MIDI", hint: "Glides stay as bend curves." },
-  { id: "tuning", label: "Switch to 53-EDO makam", hint: "Each note moves onto the nearest makam pitch." },
+  { id: "midi", label: "See it become MIDI", hint: "Slides stay as slides." },
+  { id: "tuning", label: "Switch to Turkish makam", hint: "Each note moves onto the nearest makam pitch." },
   { id: "play", label: "Play it back" },
 ];

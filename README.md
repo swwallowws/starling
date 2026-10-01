@@ -4,7 +4,7 @@ simply sing.
 
 Formerly voxmpe; the code, crates and commands keep that name.
 
-Sing, get expressive MPE MIDI. Starling tracks a sung phrase with CREPE, splits it into notes, and writes MIDI that keeps the voice's glides, vibrato and dynamics as per-note expression. Optionally snap it to any Scala tuning.
+Your voice as MIDI, every slide and in-between note included. Starling tracks a sung phrase with CREPE, splits it into notes, and writes MPE MIDI that keeps the voice's slides, vibrato and loudness on each note. It works in standard tuning or any other: Turkish makam, quarter tones, or any Scala tuning you bring.
 
 ## Studio
 

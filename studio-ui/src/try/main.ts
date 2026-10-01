@@ -265,7 +265,7 @@ for (const input of tuningInputs) {
       say((e as Error).message);
       return;
     }
-    say(tuning ? `${notes.length} notes in 53-EDO, the 53 commas per octave of Turkish makam.` : `${notes.length} notes in 12-TET.`);
+    say(tuning ? `${notes.length} notes in Turkish makam (53 steps to the octave).` : `${notes.length} notes in standard tuning.`);
     playEl.disabled = notes.length === 0;
     if (tuning) rail.done("tuning");
   });
