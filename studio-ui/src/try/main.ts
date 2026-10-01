@@ -47,8 +47,8 @@ sampleEls[1].addEventListener("click", () => void useSample());
 
 const { rail } = demoShell($("demo"), {
   product: "Starling",
-  title: "Turn a voice into notes.",
-  intro: "A small slice of the studio, on the same engine.",
+  title: "Turn sound into notes.",
+  intro: "A small slice of the studio.",
   steps: STEPS,
   // The rail's title stays a plain "Try it out!"; the way to the full studio comes at
   // the end of the tour, as in every demo.
