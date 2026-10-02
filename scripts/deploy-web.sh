@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Build the browser studio and stage it for swwallowws/starling-web (formerly voxmpe-web).
+# Build the browser studio and stage it. CI (.github/workflows/ci.yml) stages it on
+# every push to main and publishes it to this repo's GitHub Pages, served at
+# https://swwallowws.github.io/starling/ (the old starling-web address redirects).
 #   scripts/deploy-web.sh --stage DIR       build and stage into DIR (no git)
-#   scripts/deploy-web.sh --push CHECKOUT   stage into a clone of starling-web, commit, push
-# Pushing publishes the site: only with Bengisu's explicit go.
+#   scripts/deploy-web.sh --push CHECKOUT   stage into a checkout, commit, push (old manual route)
 set -euo pipefail
 
 mode="${1:-}"; target="${2:-}"

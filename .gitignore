@@ -23,6 +23,8 @@
 *.safetensors
 # Except the try page's sample take (a starling, CC0), made by studio-ui/scripts/make-sample.mjs.
 !/studio-ui/samples/starling-song.mp3
+# And CREPE tiny (2 MB, MIT), so CI can build the browser studio; the 85 MB full model stays local.
+!/models/crepe-tiny.onnx
 # Research downloads, notes and scripts (sample hunting): kept local.
 /research/
 # Tooling and caches.
