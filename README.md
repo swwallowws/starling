@@ -32,8 +32,9 @@ install, takes kept in the browser.
 `build:web` also needs `wasm-pack` and the `wasm32-unknown-unknown` Rust target
 (`rustup target add wasm32-unknown-unknown`).
 
-`scripts/deploy-web.sh --stage DIR` stages the site; `--push CHECKOUT` publishes
-it to a clone of `swwallowws/starling-web` (GitHub Pages).
+`scripts/deploy-web.sh --stage DIR` stages the site. CI builds it on every push to
+`main` and publishes it to this repo's GitHub Pages:
+https://swwallowws.github.io/starling/
 
 ## Setup
 

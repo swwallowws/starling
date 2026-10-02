@@ -2,7 +2,7 @@
 
 simply sing. Formerly voxmpe.
 
-Sing, get expressive MPE MIDI, in the browser: https://swwallowws.github.io/starling-web/
+Sing, get expressive MPE MIDI, in the browser: https://swwallowws.github.io/starling/
 
-This repository holds only the built site. Your recordings stay in your
-browser and are never uploaded.
+This is the built site, published from https://github.com/swwallowws/starling by
+its CI. Your recordings stay in your browser and are never uploaded.
