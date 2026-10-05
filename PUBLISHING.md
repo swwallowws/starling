@@ -34,7 +34,7 @@ history needs rewriting.
   pyproject.
 - [x] README states the licences of what the project uses: CREPE weights and
   torchcrepe (MIT, exported locally, never committed) and the vendored fonts in
-  `studio-ui/vendor/design/fonts` (Archivo and JetBrains Mono, OFL 1.1, licence
+  `studio-ui/vendor/design/fonts` (Inter Tight and Geist Mono, OFL 1.1, licence
   texts committed next to them).
 - [x] `.gitignore` covers `takes/`, `models/*.onnx`, build output, and now also a
   safety net for audio, MIDI, `.als` and weight files anywhere, plus

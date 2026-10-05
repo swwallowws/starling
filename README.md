@@ -84,7 +84,7 @@ Third-party material it downloads or ships:
 - CREPE pitch model weights (Jong Wook Kim et al., 2018): MIT. Exported locally
   from the [torchcrepe](https://github.com/maxrmorrison/torchcrepe) package
   (Max Morrison, 2020, MIT) by `scripts/export_crepe.py`; not committed.
-- Fonts in `studio-ui/vendor/design/fonts`: Archivo and JetBrains Mono, SIL Open
+- Fonts in `studio-ui/vendor/design/fonts`: Inter Tight and Geist Mono, SIL Open
   Font License 1.1 (license texts next to the fonts).
 - The instrument sounds the studio plays its MIDI with,
   `studio-ui/vendor/design/sound/gm.sf3`: made from GeneralUser GS 2.0.3 by
