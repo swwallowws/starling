@@ -6,6 +6,12 @@ Formerly voxmpe; the code, crates and commands keep that name.
 
 Your voice as MIDI, every slide and in-between note included. Starling tracks a sung phrase with CREPE, splits it into notes, and writes MPE MIDI that keeps the voice's slides, vibrato and loudness on each note. It works in standard tuning or any other: Turkish makam, quarter tones, or any Scala tuning you bring.
 
+## In pictures
+
+<a href="media/loop-paper.mp4"><img src="media/studio-paper.png" alt="Starling's studio: a sung phrase drawn as notes" width="720"></a>
+
+Files to share: [loop, Paper](media/loop-paper.mp4) · [loop, Night](media/loop-night.mp4) · [still, Paper](media/studio-paper.png) · [still, Night](media/studio-night.png)
+
 ## Studio
 
     voxmpe studio
