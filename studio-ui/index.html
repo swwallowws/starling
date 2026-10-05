@@ -25,24 +25,31 @@
     <header class="bar">
       <strong class="wordmark">Starling<span class="wordmark-dot">.</span></strong>
       <span class="tagline">simply sing.</span>
+      <!-- Record and Play first, as in the demo; then what you hear, the take, the tuning. -->
+      <span class="group transport" aria-label="Transport">
+        <button id="record" type="button" data-icon="record" data-toggle data-pressed-icon="stop" data-pressed-label="Stop recording"></button>
+        <button id="play" type="button" data-icon="play" data-toggle data-key="Space"></button>
+        <span class="ds-choice small" role="radiogroup" aria-label="Listen to">
+          <label><input type="radio" name="listen" value="voice" />Voice</label><label><input type="radio" name="listen" value="midi" checked />MIDI</label><label><input type="radio" name="listen" value="both" />Both</label>
+        </span>
+        <span id="rec-status" class="fine"></span>
+      </span>
       <span class="group" aria-label="Take">
-        <button id="record">Record</button>
-        <input id="take-name" aria-label="Name for the next take" />
-        <span id="rec-status"></span>
-        <select id="takes" aria-label="Open a take"></select>
-        <button id="delete-take" hidden title="Delete this take from the browser">Delete</button>
+        <input id="take-name" class="ds-field" aria-label="Name for the next take" />
+        <select id="takes" class="ds-select" aria-label="Open a take"></select>
+        <button id="delete-take" class="ds-button small" hidden title="Delete this take from the browser">Delete</button>
       </span>
       <span class="group" aria-label="Tuning">
-        <label>Tuning <select id="tuning"></select></label>
+        <label>Tuning <select id="tuning" class="ds-select"></select></label>
         <input id="scl-file" type="file" accept=".scl" hidden />
         <input id="wav-file" type="file" accept=".wav,audio/wav" hidden />
-        <label>Anchor <select id="anchor"></select></label>
-        <input id="anchor-custom" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
+        <label>Anchor <select id="anchor" class="ds-select"></select></label>
+        <input id="anchor-custom" class="ds-field" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
         <span id="tuning-error" class="error" role="alert"></span>
       </span>
       <span class="group" aria-label="Status">
         <span id="note-count"></span>
-        <button id="fit" hidden title="Show the whole take (double-click the roll, or press 0)">Fit</button>
+        <button id="fit" class="ds-button small" hidden title="Show the whole take (double-click the roll, or press 0)">Fit</button>
       </span>
     </header>
     <p id="message" class="message" role="status"></p>
@@ -56,21 +63,16 @@
       <aside id="controls"></aside>
     </main>
     <footer class="bar">
-      <button id="play">Play (Space)</button>
-      <span role="radiogroup" aria-label="Listen to">
-        <label><input type="radio" name="listen" value="voice" /> Voice</label>
-        <label><input type="radio" name="listen" value="midi" checked /> MIDI</label>
-        <label><input type="radio" name="listen" value="both" /> Both</label>
+      <span class="ds-label" id="save-as">Save as</span>
+      <span class="ds-chips formats" role="group" aria-labelledby="save-as">
+        <label class="ds-chip" title="For any MPE synth. MPE: each note on its own channel, glides and tuning as pitch bend (±48)"><input type="checkbox" name="format" value="mid" /><span>MPE MIDI</span></label>
+        <label class="ds-chip" title="For Ableton Live 12 and Scala synths: a .mid whose notes are the tuning's steps, and the tuning as an .ascl file"><input type="checkbox" name="format" value="live" /><span>MIDI with the tuning</span></label>
+        <label class="ds-chip" title="An Ableton Live set with the take's MIDI in it"><input type="checkbox" name="format" value="als" /><span>Ableton Live set</span></label>
       </span>
-      <span class="formats" aria-label="Save as">
-        <label title="MPE: each note on its own channel, glides and tuning as pitch bend (±48)"><input type="checkbox" name="format" value="mid" /> MIDI for any MPE synth</label>
-        <label title="A .mid whose notes are the tuning's steps, and the tuning as an .ascl file"><input type="checkbox" name="format" value="live" /> MIDI with the tuning (Ableton Live 12 and Scala synths)</label>
-        <label><input type="checkbox" name="format" value="als" /> Ableton Live set</label>
-      </span>
-      <button id="save">Save</button>
+      <button id="save" class="ds-button primary">Save</button>
       <span id="live-hint" class="fine" hidden>Load the tuning file in Ableton Live's Tuning section, then drag the MIDI in.</span>
       <span id="drags"></span>
-      <button id="reveal" hidden>Reveal in Finder</button>
+      <button id="reveal" class="ds-button small" hidden>Reveal in Finder</button>
       <span id="saved-path"></span>
       <span class="legend" aria-label="Piano roll key">
         <span class="mk slash"></span> pitch change

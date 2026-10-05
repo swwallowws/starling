@@ -4,6 +4,7 @@
 @import "../../vendor/design/demoshell.css";
 @import "../../vendor/design/playhead.css";
 @import "../../vendor/design/range.css";
+@import "../../vendor/design/controls.css";
 
 * { box-sizing: border-box; }
 
@@ -36,10 +37,7 @@
 :focus-visible { outline: 1px solid var(--acc); outline-offset: 1px; }
 .steprail .steprail-reset { background: none; border: 0; padding: 0; }
 
-.try-tuning { display: inline-flex; flex-wrap: wrap; gap: var(--space); }
-.try-tuning label { display: inline-flex; gap: calc(var(--space) / 2); align-items: center; }
-.try-tuning input { accent-color: var(--acc); margin: 0; }
-.try-tuning label:has(input:disabled) { color: var(--ink-mut); }
+/* Standard / 53 commas is the design's joined choice, like Listen to in the studio. */
 
 @media (max-width: 700px) {
   .try-stage { height: 170px; }

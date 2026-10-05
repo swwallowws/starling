@@ -16,11 +16,29 @@ function setup() {
 }
 
 describe("controls", () => {
-  it("heads both groups, and keeps the accent off the 'off' label", () => {
+  it("heads both groups with the design's label", () => {
     const { root } = setup();
-    expect([...root.querySelectorAll("h3")].map((h) => h.textContent)).toEqual(["Note splits", "Expression"]);
-    const off = [...root.querySelectorAll("label > span")].find((s) => s.textContent?.includes("off"))!;
-    expect(off.classList.contains("plain")).toBe(true);
+    const heads = [...root.querySelectorAll("h3")];
+    expect(heads.map((h) => h.textContent)).toEqual(["Note splits", "Expression"]);
+    expect(heads.every((h) => h.classList.contains("ds-label"))).toBe(true);
+  });
+
+  it("'off' is a chip of its own, outside the slider's label, so a click on the word turns it off", () => {
+    const { root, store } = setup();
+    const chip = root.querySelector<HTMLLabelElement>("label.ds-chip")!;
+    expect(chip.textContent).toBe("off");
+    expect(chip.parentElement!.closest("label")).toBeNull();
+    document.body.append(root);                       // a label passes its click on only in a document
+    chip.querySelector("span")!.click();
+    expect(store.get().onset_delta).toBeNull();
+    root.remove();
+  });
+
+  it("Legato, Reset and Copy as flags are the design's buttons", () => {
+    const { root } = setup();
+    const buttons = [...root.querySelectorAll("button")];
+    expect(buttons.map((b) => b.textContent)).toEqual(["Legato", "Reset", "Copy as flags"]);
+    expect(buttons.every((b) => b.classList.contains("ds-button"))).toBe(true);
   });
 
   it("moving a slider keeps a tuning loaded elsewhere", () => {

@@ -39,7 +39,7 @@ const segmentation = (s: Partial<Settings>): Partial<Settings> => ({
 export function buildControls(root: HTMLElement, store: SettingsStore) {
   root.innerHTML = "";
   const inputs = new Map<NumKey, [HTMLInputElement, HTMLElement]>();
-  root.append(Object.assign(document.createElement("h3"), { textContent: "Note splits" }));
+  root.append(Object.assign(document.createElement("h3"), { className: "ds-label", textContent: "Note splits" }));
 
   for (const d of SLIDERS) {
     const label = document.createElement("label");
@@ -57,13 +57,14 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
   const onsetOff = Object.assign(document.createElement("input"), { type: "checkbox" });
   onsetRange.addEventListener("input", () => store.patch({ onset_delta: Number(onsetRange.value) }));
   onsetOff.addEventListener("change", () => store.patch({ onset_delta: onsetOff.checked ? null : Number(onsetRange.value) }));
-  // Plain ink: the accent is for current values, and "off" is a choice, not a value.
-  const offLabel = Object.assign(document.createElement("span"), { className: "plain" });
-  offLabel.append(onsetOff, " off");
-  onset.append("Loudness re-attack", onsetVal, onsetRange, offLabel);
-  root.append(onset);
+  // "off" is the design's chip, a label of its own after the slider's, so a click on the
+  // word turns it off (inside the slider's label it would only reach the slider).
+  const offChip = Object.assign(document.createElement("label"), { className: "ds-chip onset-off" });
+  offChip.append(onsetOff, Object.assign(document.createElement("span"), { textContent: "off" }));
+  onset.append("Loudness re-attack", onsetVal, onsetRange);
+  root.append(onset, offChip);
 
-  const exprHead = Object.assign(document.createElement("h3"), { textContent: "Expression" });
+  const exprHead = Object.assign(document.createElement("h3"), { className: "ds-label", textContent: "Expression" });
   root.append(exprHead);
   const pcts = new Map<PctKey, [HTMLInputElement, HTMLElement]>();
   for (const d of EXPRESSION) {
@@ -77,8 +78,8 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
   }
 
   const buttons = document.createElement("div");
-  const legato = Object.assign(document.createElement("button"), { textContent: "Legato" });
-  const reset = Object.assign(document.createElement("button"), { textContent: "Reset" });
+  const legato = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Legato" });
+  const reset = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Reset" });
   legato.addEventListener("click", () => store.patch(segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
   reset.addEventListener("click", () => store.patch({ ...segmentation(DEFAULT_SETTINGS), ...expression(DEFAULT_SETTINGS) }));
   buttons.append(legato, " ", reset);
@@ -86,7 +87,7 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
 
   const flags = document.createElement("p");
   const code = document.createElement("code");
-  const copy = Object.assign(document.createElement("button"), { textContent: "Copy as flags" });
+  const copy = Object.assign(document.createElement("button"), { className: "ds-button small", textContent: "Copy as flags" });
   copy.addEventListener("click", () => navigator.clipboard.writeText(code.textContent ?? ""));
   flags.append(code, " ", copy);
   // The settings as command-line flags: for the desktop command line, which isn't public,

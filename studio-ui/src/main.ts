@@ -18,8 +18,15 @@ import { Player } from "./player";
 import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
 import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
 import type { SavedFile } from "./types";
+import { iconButton } from "../vendor/design/iconbutton.js";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+// Record and Play are the design's icon toggles, as in the demo: record turns to
+// stop while recording, play to pause while playing. Their state follows the
+// recorder and the player, set below; a click flips it first, then is corrected.
+const recordBtn = iconButton($<HTMLButtonElement>("record"));
+const playBtn = iconButton($<HTMLButtonElement>("play"));
 
 export function say(text: string) {
   $("message").textContent = text;
@@ -134,7 +141,7 @@ Object.assign(window, { starlingPlayer: player });
 async function togglePlay() {
   if (player.playing) player.stop();
   else player.play(startPoint(app.playhead ?? 0, app.info?.duration_s ?? 0));
-  $("play").textContent = player.playing ? "Stop (Space)" : "Play (Space)";
+  playBtn.setPressed(player.playing);
   tickPlayhead();
 }
 
@@ -143,7 +150,7 @@ function tickPlayhead() {
   rollInput.follow(app.playhead);
   redraw();
   if (player.playing) requestAnimationFrame(tickPlayhead);
-  else $("play").textContent = "Play (Space)";
+  else playBtn.setPressed(false);
 }
 
 $("play").addEventListener("click", togglePlay);
@@ -164,15 +171,16 @@ async function toggleRecord() {
         const secs = ((performance.now() - t0) / 1000).toFixed(1);
         $("rec-status").textContent = `${secs} s  ${"|".repeat(Math.round(peak * 20))}`;
       });
-      btn.textContent = "Stop recording (Space)";
+      recordBtn.setPressed(true);
     } catch (e) {
+      recordBtn.setPressed(false);
       say(micError(e));
     }
     return;
   }
   btn.disabled = true;
   const { wav, seconds } = await recorder.stop();
-  btn.textContent = "Record";
+  recordBtn.setPressed(false);
   $("rec-status").textContent = "";
   say(`Saving and analyzing ${seconds.toFixed(1)} s...`);
   try {
@@ -434,7 +442,7 @@ if (!unsupported) api
   .then((r) => (r ? opened(r) : refreshTakes()))
   .catch((e) => {
     say(`${e.message}. `);
-    const retry = Object.assign(document.createElement("button"), { textContent: "Retry" });
+    const retry = Object.assign(document.createElement("button"), { className: "ds-button small", textContent: "Retry" });
     retry.onclick = () => location.reload();
     $("message").append(retry);
   });

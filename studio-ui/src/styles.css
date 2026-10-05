@@ -1,6 +1,8 @@
 @import "../vendor/design/tokens.css";
 @import "../vendor/design/playhead.css";
 @import "../vendor/design/range.css";
+@import "../vendor/design/controls.css";
+@import "../vendor/design/iconbutton.css";
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; display: grid; grid-template-rows: auto auto 1fr auto; height: 100vh; }
@@ -23,20 +25,17 @@ main { display: grid; grid-template-columns: 1fr 300px; min-height: 0; }
 .empty p { margin: 0; }
 .fine { font-size: 12px; color: var(--ink-mut); }
 #controls { padding: calc(var(--space) * 2); border-left: var(--hairline); overflow: auto; font-size: 13px; }
-#controls label { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2); margin-bottom: calc(var(--space) * 2); }
-#controls label > span { color: var(--acc); }
-#controls label > span.plain { color: var(--ink); }
+#controls label:not(.ds-chip) { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2); margin-bottom: calc(var(--space) * 2); }
+#controls label:not(.ds-chip) > span { color: var(--acc); }
+#controls .onset-off { margin: calc(var(--space) * -1.5) 0 calc(var(--space) * 2); }
 #controls code { font-family: var(--font-mono); font-size: 12px; word-break: break-all; }
-button, select, input[type="text"], input[type="number"] { font: inherit; color: var(--ink); background: var(--ground-2); border: var(--hairline); border-radius: var(--radius); padding: calc(var(--space) / 2) var(--space); }
-button { cursor: pointer; }
-button:hover { background: var(--band); }
-button:disabled { opacity: 0.5; cursor: default; }
+/* Buttons, choices, chips, fields and selects are the design's (controls.css); Record and Play its icon buttons. */
 :focus-visible { outline: 1px solid var(--acc); outline-offset: 1px; }
 input[type="checkbox"] { accent-color: var(--acc); }
 /* Sliders are the design system's quiet line (range.css, .range-line); --fill is set from JS. */
 #controls input[type="range"] { grid-column: 1 / -1; }
 .error { color: var(--ink); font-weight: 600; }
-#controls h3 { font-size: 13px; font-weight: 600; margin: calc(var(--space) * 2) 0 var(--space); color: var(--ink-mut); }
+#controls h3 { margin: calc(var(--space) * 2) 0 var(--space); }
 #controls h3:first-child { margin-top: 0; }
 .legend { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; margin-left: auto; color: var(--ink-mut); font-size: 12px; }
 .legend .mk, .legend .ln { display: inline-block; }
