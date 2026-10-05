@@ -16,8 +16,8 @@ export function micMessage(err: unknown): string {
 
 /** The rail's steps, in order. */
 export const STEPS = [
-  { id: "sing", label: "Sing anything", hint: "Up to about 10 seconds. Stop whenever you like. No mic? Try a starling's song." },
-  { id: "midi", label: "See it become MIDI", hint: "Slides stay as slides." },
-  { id: "tuning", label: "Switch to Turkish makam", hint: "Each note moves onto the nearest makam pitch." },
-  { id: "play", label: "Play it back" },
+  { id: "sing", label: "sing anything", hint: "Up to about 10 seconds. Stop whenever you like. No mic? Try a starling's song." },
+  { id: "midi", label: "see it become MIDI", hint: "Slides stay as slides." },
+  { id: "tuning", label: "switch to the 53-comma tuning", hint: "Each note snaps to the nearest of 53 commas per octave, the grid Turkish makam theory is built on." },
+  { id: "play", label: "play it back" },
 ];

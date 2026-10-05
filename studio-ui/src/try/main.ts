@@ -47,7 +47,7 @@ sampleEls[1].addEventListener("click", () => void useSample());
 
 const { rail } = demoShell($("demo"), {
   product: "Starling",
-  title: "Turn sound into notes.",
+  title: "turn sound into notes.",
   intro: "A small slice of the studio.",
   steps: STEPS,
   // The rail's title stays a plain "Try it out!"; the way to the full studio comes at
@@ -265,7 +265,7 @@ for (const input of tuningInputs) {
       say((e as Error).message);
       return;
     }
-    say(tuning ? `${notes.length} notes in Turkish makam (53 steps to the octave).` : `${notes.length} notes in standard tuning.`);
+    say(tuning ? `${notes.length} notes on the 53-comma grid of Turkish makam theory.` : `${notes.length} notes in standard tuning.`);
     playEl.disabled = notes.length === 0;
     if (tuning) rail.done("tuning");
   });
