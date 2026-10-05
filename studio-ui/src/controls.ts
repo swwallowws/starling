@@ -44,7 +44,7 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
   for (const d of SLIDERS) {
     const label = document.createElement("label");
     const val = document.createElement("span");
-    const input = Object.assign(document.createElement("input"), { type: "range", min: String(d.min), max: String(d.max), step: String(d.step) });
+    const input = Object.assign(document.createElement("input"), { type: "range", className: "range-line", min: String(d.min), max: String(d.max), step: String(d.step) });
     input.addEventListener("input", () => store.patch({ [d.key]: Number(input.value) }));
     label.append(d.label, val, input);
     root.append(label);
@@ -53,7 +53,7 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
 
   const onset = document.createElement("label");
   const onsetVal = document.createElement("span");
-  const onsetRange = Object.assign(document.createElement("input"), { type: "range", min: "0.1", max: "3", step: "0.05" });
+  const onsetRange = Object.assign(document.createElement("input"), { type: "range", className: "range-line", min: "0.1", max: "3", step: "0.05" });
   const onsetOff = Object.assign(document.createElement("input"), { type: "checkbox" });
   onsetRange.addEventListener("input", () => store.patch({ onset_delta: Number(onsetRange.value) }));
   onsetOff.addEventListener("change", () => store.patch({ onset_delta: onsetOff.checked ? null : Number(onsetRange.value) }));
@@ -69,7 +69,7 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
   for (const d of EXPRESSION) {
     const label = document.createElement("label");
     const val = document.createElement("span");
-    const input = Object.assign(document.createElement("input"), { type: "range", name: d.key, min: "0", max: String(d.max), step: "5" });
+    const input = Object.assign(document.createElement("input"), { type: "range", className: "range-line", name: d.key, min: "0", max: String(d.max), step: "5" });
     input.addEventListener("input", () => store.patch({ [d.key]: Number(input.value) / 100 }));
     label.append(d.label, val, input);
     root.append(label);

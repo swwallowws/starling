@@ -55,6 +55,13 @@ describe("controls", () => {
     expect(vibrato.value).toBe("100");
   });
 
+  it("every slider is the design system's quiet line", () => {
+    const { root } = setup();
+    const ranges = [...root.querySelectorAll<HTMLInputElement>('input[type="range"]')];
+    expect(ranges.length).toBe(9);
+    expect(ranges.every((r) => r.classList.contains("range-line"))).toBe(true);
+  });
+
   it("Reset also resets expression, Legato leaves it", () => {
     const { root, store } = setup();
     store.patch({ correction: 0.7 });

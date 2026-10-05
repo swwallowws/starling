@@ -1,5 +1,6 @@
 @import "../vendor/design/tokens.css";
 @import "../vendor/design/playhead.css";
+@import "../vendor/design/range.css";
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; display: grid; grid-template-rows: auto auto 1fr auto; height: 100vh; }
@@ -32,13 +33,8 @@ button:hover { background: var(--band); }
 button:disabled { opacity: 0.5; cursor: default; }
 :focus-visible { outline: 1px solid var(--acc); outline-offset: 1px; }
 input[type="checkbox"] { accent-color: var(--acc); }
-/* Range sliders as in the design system's reference page: thin track, accent fill (--fill set from JS), square thumb. */
-input[type="range"] { grid-column: 1 / -1; width: 100%; appearance: none; -webkit-appearance: none; height: 12px; background: transparent; cursor: pointer; }
-input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(to right, var(--acc) var(--fill, 0%), var(--line) var(--fill, 0%)); }
-input[type="range"]::-moz-range-track { height: 2px; background: linear-gradient(to right, var(--acc) var(--fill, 0%), var(--line) var(--fill, 0%)); }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; background: var(--acc); border: 0; border-radius: 0; }
-input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: var(--acc); border: 0; border-radius: 0; }
-input[type="range"]:disabled { opacity: 0.4; }
+/* Sliders are the design system's quiet line (range.css, .range-line); --fill is set from JS. */
+#controls input[type="range"] { grid-column: 1 / -1; }
 .error { color: var(--ink); font-weight: 600; }
 #controls h3 { font-size: 13px; font-weight: 600; margin: calc(var(--space) * 2) 0 var(--space); color: var(--ink-mut); }
 #controls h3:first-child { margin-top: 0; }
