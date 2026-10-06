@@ -1,6 +1,6 @@
 # Starling
 
-simply sing.
+Simply sing.
 
 Formerly voxmpe; the code, crates and commands keep that name.
 
