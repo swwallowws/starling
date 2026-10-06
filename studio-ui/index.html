@@ -22,9 +22,8 @@
     </script>
   </head>
   <body>
-    <header class="bar">
-      <strong class="wordmark">Starling<span class="wordmark-dot">.</span></strong>
-      <span class="tagline">simply sing.</span>
+    <header class="ds-header">
+      <strong class="ds-wordmark">Starling<span class="dot">.</span></strong>
       <!-- Record and Play first, as in the demo; then what you hear, the take, the tuning. -->
       <span class="group transport" aria-label="Transport">
         <button id="record" type="button" data-icon="record" data-toggle data-pressed-icon="stop" data-pressed-label="Stop recording"></button>
@@ -35,16 +34,18 @@
         <span id="rec-status" class="fine"></span>
       </span>
       <span class="group" aria-label="Take">
-        <input id="take-name" class="ds-field" aria-label="Name for the next take" />
         <select id="takes" class="ds-select" aria-label="Open a take"></select>
+        <input id="take-name" class="ds-field" aria-label="Name for the next take" title="Name for the next take" />
         <button id="delete-take" class="ds-button small" hidden title="Delete this take from the browser">Delete</button>
       </span>
       <span class="group" aria-label="Tuning">
         <label>Tuning <select id="tuning" class="ds-select"></select></label>
         <input id="scl-file" type="file" accept=".scl" hidden />
         <input id="wav-file" type="file" accept=".wav,audio/wav" hidden />
-        <label>Anchor <select id="anchor" class="ds-select"></select></label>
-        <input id="anchor-custom" class="ds-field" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
+        <span id="root-note" class="root-note" hidden>
+          <label title="The note the tuning starts from">Root note <select id="anchor" class="ds-select"></select></label>
+          <input id="anchor-custom" class="ds-field" type="number" step="0.1" min="1" aria-label="Root note frequency in Hz" hidden />
+        </span>
         <span id="tuning-error" class="error" role="alert"></span>
       </span>
       <span class="group status" aria-label="Status">
@@ -66,7 +67,7 @@
       <span class="ds-label" id="save-as">Save as</span>
       <span class="ds-chips formats" role="group" aria-labelledby="save-as">
         <label class="ds-chip" title="For any MPE synth. MPE: each note on its own channel, glides and tuning as pitch bend (±48)"><input type="checkbox" name="format" value="mid" /><span>MPE MIDI</span></label>
-        <label class="ds-chip" title="For Ableton Live 12 and Scala synths: a .mid whose notes are the tuning's steps, and the tuning as an .ascl file"><input type="checkbox" name="format" value="live" /><span>MIDI with the tuning</span></label>
+        <label class="ds-chip" title="For Ableton Live 12 and Scala synths: a .mid whose notes are the tuning's steps, and the tuning as an .ascl file"><input type="checkbox" name="format" value="live" /><span>MIDI with tuning</span></label>
         <label class="ds-chip" title="An Ableton Live set with the take's MIDI in it"><input type="checkbox" name="format" value="als" /><span>Ableton Live set</span></label>
       </span>
       <button id="save" class="ds-button primary">Save</button>
@@ -75,12 +76,12 @@
       <button id="reveal" class="ds-button small" hidden>Reveal in Finder</button>
       <span id="saved-path"></span>
       <span class="legend" aria-label="Piano roll key">
-        <span class="mk slash"></span> pitch change
-        <span class="mk tick"></span> re-attack
-        <span>no mark: after a gap</span>
+        <span class="mk slash"></span> Pitch change
+        <span class="mk tick"></span> Re-attack
+        <span>No mark: after a gap</span>
         <span class="ln"></span> MIDI pitch
-        <span class="ln mut"></span> sung pitch
-        <span>click or drag to move the playhead, pinch or ⌘+scroll to zoom, drag to pan when zoomed in</span>
+        <span class="ln mut"></span> Sung pitch
+        <span>Click or drag to move the playhead, pinch or ⌘+scroll to zoom, drag to pan when zoomed in</span>
       </span>
       <span id="privacy" class="fine" hidden>Your takes stay in this browser and are never uploaded.</span>
     </footer>

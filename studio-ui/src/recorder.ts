@@ -19,6 +19,22 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export const defaultTakeName = (d: Date) =>
   `take-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 
+/** A stored take name (a safe file name, "Take-1.wav") shown the way a person wrote it
+ * ("Take 1"): no extension, spaces for the dashes, a capital first. */
+export function takeLabel(stored: string): string {
+  const s = stored.replace(/\.wav$/i, "").replace(/[-_]+/g, " ").trim();
+  return s ? s[0].toUpperCase() + s.slice(1) : stored;
+}
+
+/** The next take's name, as a person would write it: "Take 1", "Take 2", the lowest number
+ * no take already has (any case). */
+export function nextTakeName(existing: string[]): string {
+  const used = new Set(existing.map((n) => /^take (\d+)$/i.exec(n.trim())?.[1]).filter(Boolean).map(Number));
+  let n = 1;
+  while (used.has(n)) n++;
+  return `Take ${n}`;
+}
+
 export class Recorder {
   private ctx: AudioContext | null = null;
   private stream: MediaStream | null = null;

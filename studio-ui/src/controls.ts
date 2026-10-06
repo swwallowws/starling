@@ -4,8 +4,9 @@ import { DEFAULT_SETTINGS, LEGATO, type Settings } from "./types";
 type NumKey = "hold_ms" | "jump_hold_ms" | "jump_cents" | "gap_ms" | "split_cents";
 const SLIDERS: { key: NumKey; label: string; min: number; max: number; step: number; unit: string }[] = [
   { key: "hold_ms", label: "New note after (small step)", min: 30, max: 400, step: 5, unit: "ms" },
-  { key: "jump_hold_ms", label: "New note after (big leap)", min: 30, max: 400, step: 5, unit: "ms" },
+  // what counts as a big leap comes right before the setting it governs
   { key: "jump_cents", label: "Big leap from", min: 100, max: 1200, step: 10, unit: "cents" },
+  { key: "jump_hold_ms", label: "New note after (big leap)", min: 30, max: 400, step: 5, unit: "ms" },
   { key: "gap_ms", label: "Gap that splits", min: 30, max: 400, step: 5, unit: "ms" },
   { key: "split_cents", label: "Pitch move that splits", min: 30, max: 300, step: 5, unit: "cents" },
 ];
@@ -77,13 +78,14 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
     pcts.set(d.key, [input, val]);
   }
 
-  const buttons = document.createElement("div");
-  const legato = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Legato", title: "Longer, joined notes: fewer splits" });
-  const reset = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Reset", title: "Every setting back to its default" });
+  // The presets lead the panel: one press for longer notes, or back to the start.
+  const buttons = Object.assign(document.createElement("div"), { className: "presets" });
+  const legato = Object.assign(document.createElement("button"), { className: "ds-button small", textContent: "Legato", title: "Longer, joined notes: fewer splits" });
+  const reset = Object.assign(document.createElement("button"), { className: "ds-button small", textContent: "Reset", title: "Every setting back to its default" });
   legato.addEventListener("click", () => store.patch(segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
   reset.addEventListener("click", () => store.patch({ ...segmentation(DEFAULT_SETTINGS), ...expression(DEFAULT_SETTINGS) }));
-  buttons.append(legato, " ", reset);
-  root.append(buttons);
+  buttons.append(legato, reset);
+  root.prepend(buttons);
 
   const flags = document.createElement("p");
   const code = document.createElement("code");

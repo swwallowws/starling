@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const header = page.split('<header class="bar">')[1].split("</header>")[0];
+const header = page.split('<header class="ds-header">')[1].split("</header>")[0];
 const footer = page.split('<footer class="bar">')[1].split("</footer>")[0];
 
 describe("studio page", () => {
@@ -15,6 +15,17 @@ describe("studio page", () => {
     expect(header).toMatch(/<button id="record"[^>]*data-icon="record"[^>]*data-pressed-icon="stop"/);
     expect(header).toMatch(/<button id="play"[^>]*data-icon="play"[^>]*data-key="Space"/);
     expect(header.indexOf('id="play"')).toBeLessThan(header.indexOf('id="take-name"'));
+  });
+
+  it("has the shared header: the wordmark, no tagline", () => {
+    expect(header).toMatch(/class="ds-wordmark">Starling<span class="dot">\.<\/span>/);
+    expect(header).not.toMatch(/simply/);
+  });
+
+  it("keeps the root note out of sight until a tuning needs it, and says it plainly", () => {
+    expect(header).toMatch(/<span id="root-note" class="root-note" hidden>/);
+    expect(header).toMatch(/Root note <select id="anchor"/);
+    expect(page).not.toMatch(/>Anchor </);
   });
 
   it("puts what you hear next to Play, as a joined choice", () => {

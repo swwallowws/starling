@@ -5,7 +5,7 @@ import { encodeWavFloat32 } from "../wav";
 
 /** The take's name in the browser's take list. The button label and the
  *  credit ("Starling song: Vrymaa, Freesound, CC0") are in try/index.html. */
-export const SAMPLE_NAME = "starling-song";
+export const SAMPLE_NAME = "Starling song";
 
 /** The decoded audio, as an AudioBuffer gives it. */
 export interface Decoded {

@@ -15,7 +15,7 @@ import { startPoint } from "./synth";
 import { createRenderer } from "./renderer";
 import { throttleLatest } from "./throttle";
 import { Player } from "./player";
-import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
+import { Recorder, micError, nextTakeName, takeLabel, takeNameFromFile } from "./recorder";
 import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
 import type { SavedFile } from "./types";
 import { SAMPLE_NAME, browserDecode, sampleWav } from "./try/sample";
@@ -53,10 +53,12 @@ async function refreshTakes(select?: string) {
   const takes = await api.listTakes();
   const sel = $<HTMLSelectElement>("takes");
   sel.textContent = "";
-  sel.add(new Option("Open a take...", ""));
-  for (const t of takes) sel.add(new Option(t, t));
-  sel.add(new Option("Open WAV...", OPEN_FILE));
+  sel.add(new Option("Open a take…", ""));
+  for (const t of takes) sel.add(new Option(takeLabel(t), t));
+  sel.add(new Option("Open a WAV file…", OPEN_FILE));
   if (select) sel.value = select;
+  // the next recording's name, shown in its field until someone types their own
+  $<HTMLInputElement>("take-name").placeholder = nextTakeName(takes.map(takeLabel));
 }
 
 export const app = {
@@ -160,7 +162,9 @@ document.querySelectorAll<HTMLInputElement>('input[name="listen"]').forEach((r) 
 );
 const recorder = new Recorder();
 const takeName = $<HTMLInputElement>("take-name");
-takeName.value = defaultTakeName(new Date());
+takeName.placeholder = nextTakeName([]);
+/** What the next take is called: what was typed, else "Take 1", "Take 2"... */
+const nameForTake = () => takeName.value.trim() || takeName.placeholder;
 
 async function toggleRecord() {
   const btn = $<HTMLButtonElement>("record");
@@ -185,8 +189,9 @@ async function toggleRecord() {
   $("rec-status").textContent = "";
   say(`Saving and analyzing ${seconds.toFixed(1)} s...`);
   try {
-    await opened(await api.uploadTake(takeName.value, wav, analyzing(takeName.value)));
-    takeName.value = defaultTakeName(new Date());
+    const name = nameForTake();
+    await opened(await api.uploadTake(name, wav, analyzing(name)));
+    takeName.value = "";
   } catch (e) {
     say((e as Error).message);
   } finally {
@@ -293,6 +298,7 @@ document.addEventListener("mousedown", (e) => {
 
 // Tuning picker: 12-TET, the built-in tunings, the last loaded file, Load .scl...
 const tuningSel = $<HTMLSelectElement>("tuning");
+const anchorSel = $<HTMLSelectElement>("anchor");
 const sclFile = $<HTMLInputElement>("scl-file");
 let presets: Preset[] = [];
 let tuningView: TuningView = { active: null, custom: null, error: null };
@@ -300,15 +306,21 @@ let tuningView: TuningView = { active: null, custom: null, error: null };
 function showTuning(v: TuningView) {
   tuningView = v;
   tuningSel.textContent = "";
-  tuningSel.add(new Option("Standard (12-TET)", ""));
+  tuningSel.add(Object.assign(new Option("Standard", ""), { title: "12 equal steps per octave" }));
   for (const p of presets) tuningSel.add(new Option(p.name, `preset:${p.id}`));
   // A remembered built-in tuning starts as `custom` too; list it only once.
   if (v.custom && !presets.some((p) => p.scl === v.custom!.scl)) tuningSel.add(new Option(v.custom.name, "custom"));
-  tuningSel.add(new Option("Load .scl...", "load"));
+  tuningSel.add(new Option("Load a Scala file…", "load"));
   const a = v.active;
   const isPreset = a && presets.some((p) => p.id === a.name && p.scl === a.scl);
   tuningSel.value = !a ? "" : isPreset ? `preset:${a.name}` : "custom";
   $("tuning-error").textContent = v.error ? `${v.error} (kept the previous tuning)` : "";
+  showRoot();
+}
+/** The root note matters only to a tuning other than Standard, or when it is set to a custom
+ * frequency: otherwise it stays out of sight, so the header reads simply. */
+function showRoot() {
+  $("root-note").hidden = !tuningView.active && anchorSel.value !== "custom";
 }
 const tuning = createTuning(store, showTuning);
 showTuning(tuning.view());
@@ -337,16 +349,18 @@ sclFile.addEventListener("change", async () => {
   if (f) tuning.loadFile({ name: f.name, scl: await f.text() });
 });
 
-// Anchor: the scale's first note, as a note name with its frequency, or a custom Hz.
-const anchorSel = $<HTMLSelectElement>("anchor");
+// Root note (the anchor): the scale's first note, shown by name with its frequency on hover,
+// or another frequency in Hz.
 const anchorCustom = $<HTMLInputElement>("anchor-custom");
-for (const n of anchorNotes()) anchorSel.add(new Option(n.label, String(n.hz)));
-anchorSel.add(new Option("Custom...", "custom"));
+for (const n of anchorNotes()) anchorSel.add(Object.assign(new Option(n.label.split(" · ")[0], String(n.hz)), { title: `${formatHz(n.hz)} Hz` }));
+anchorSel.add(new Option("Other frequency…", "custom"));
 function showAnchor(hz: number) {
   const m = matchAnchor(hz);
   anchorSel.value = m ? String(m.hz) : "custom";
   anchorCustom.hidden = m !== null;
   anchorCustom.value = formatHz(hz);
+  anchorSel.title = `${formatHz(hz)} Hz`;
+  showRoot();
 }
 showAnchor(store.get().anchor_hz);
 anchorSel.addEventListener("change", () => {
@@ -354,6 +368,7 @@ anchorSel.addEventListener("change", () => {
     anchorCustom.hidden = false;
     anchorCustom.focus();
   } else store.patch({ anchor_hz: Number(anchorSel.value) });
+  showRoot();
 });
 anchorCustom.addEventListener("change", () => {
   const hz = Math.round(Number(anchorCustom.value) * 10) / 10;
@@ -366,7 +381,7 @@ anchorCustom.addEventListener("change", () => {
 export async function opened(r: LoadResp) {
   app.takeId = r.take_id;
   app.info = r.info;
-  say(r.info.warning ?? `${r.info.name}: ${r.info.duration_s.toFixed(1)} s`);
+  say(r.info.warning ?? `${takeLabel(r.info.name)}: ${r.info.duration_s.toFixed(1)} s`);
   document.body.dataset.analysis = r.cached ? "cached" : "fresh";
   $("empty").hidden = true;
   $("delete-take").hidden = !api.canDelete;
@@ -428,7 +443,7 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
 
 $("delete-take").addEventListener("click", async () => {
   const name = app.info?.name;
-  if (!name || !confirm(`Delete ${name} from this browser?`)) return;
+  if (!name || !confirm(`Delete ${takeLabel(name)} from this browser?`)) return;
   try {
     await api.deleteTake(name);
   } catch (e) {
