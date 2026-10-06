@@ -18,6 +18,7 @@ import { Player } from "./player";
 import { Recorder, defaultTakeName, micError, takeNameFromFile } from "./recorder";
 import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
 import type { SavedFile } from "./types";
+import { SAMPLE_NAME, browserDecode, sampleWav } from "./try/sample";
 import { iconButton } from "../vendor/design/iconbutton.js";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -381,6 +382,20 @@ export async function opened(r: LoadResp) {
   updateDrag();
   renderer.request(app.takeId, store.get());
 }
+
+// No mic handy: the starling's song, as in the demo, opened like any other take.
+const SAMPLE_URL = new URL("../samples/starling-song.mp3", import.meta.url);
+$("sample-link").addEventListener("click", async () => {
+  if (recorder.active) return;
+  say("Fetching a starling's song...");
+  try {
+    const { wav } = await sampleWav(SAMPLE_URL, browserDecode);
+    await opened(await api.uploadTake(SAMPLE_NAME, wav, analyzing(SAMPLE_NAME)));
+    say("A starling, 2 octaves down so the whistles fall in singing range. Song: Vrymaa on Freesound, CC0.");
+  } catch (err) {
+    say((err as Error).message);
+  }
+});
 
 const wavFile = $<HTMLInputElement>("wav-file");
 wavFile.addEventListener("change", async () => {

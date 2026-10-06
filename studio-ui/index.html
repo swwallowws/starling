@@ -47,7 +47,7 @@
         <input id="anchor-custom" class="ds-field" type="number" step="0.1" min="1" aria-label="Anchor frequency in Hz" hidden />
         <span id="tuning-error" class="error" role="alert"></span>
       </span>
-      <span class="group" aria-label="Status">
+      <span class="group status" aria-label="Status">
         <span id="note-count"></span>
         <button id="fit" class="ds-button small" hidden title="Show the whole take (double-click the roll, or press 0)">Fit</button>
       </span>
@@ -57,7 +57,7 @@
       <div class="stage">
         <canvas id="roll"></canvas>
         <div id="empty" class="empty">
-          <p>Record or open a take from the menu above.</p>
+          <p>Record a take, or open one from the menu above. No mic handy? <button id="sample-link" type="button" class="link">Try a starling's song.</button></p>
         </div>
       </div>
       <aside id="controls"></aside>

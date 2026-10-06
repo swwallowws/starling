@@ -78,8 +78,8 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
   }
 
   const buttons = document.createElement("div");
-  const legato = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Legato" });
-  const reset = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Reset" });
+  const legato = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Legato", title: "Longer, joined notes: fewer splits" });
+  const reset = Object.assign(document.createElement("button"), { className: "ds-button", textContent: "Reset", title: "Every setting back to its default" });
   legato.addEventListener("click", () => store.patch(segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
   reset.addEventListener("click", () => store.patch({ ...segmentation(DEFAULT_SETTINGS), ...expression(DEFAULT_SETTINGS) }));
   buttons.append(legato, " ", reset);

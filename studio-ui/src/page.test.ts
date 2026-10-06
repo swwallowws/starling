@@ -27,6 +27,10 @@ describe("studio page", () => {
     for (const id of ["takes", "tuning", "anchor"]) expect(header).toMatch(new RegExp(`<select id="${id}" class="ds-select"`));
   });
 
+  it("offers the starling's song when there is no take, as the demo does", () => {
+    expect(page).toMatch(/No mic handy\? <button id="sample-link"[^>]*>Try a starling's song\.<\/button>/);
+  });
+
   it("keeps the footer for saving: chips for the formats, one primary Save", () => {
     expect(footer).not.toMatch(/id="play"|name="listen"/);
     expect(footer.match(/<label class="ds-chip"[^>]*><input type="checkbox" name="format"/g)).toHaveLength(3);
