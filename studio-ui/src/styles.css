@@ -3,13 +3,14 @@
 @import "../vendor/design/range.css";
 @import "../vendor/design/controls.css";
 @import "../vendor/design/iconbutton.css";
+@import "../vendor/design/themeswitch.css";
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; height: 100vh; }
 /* header, the message line when there is one, the roll and panel taking the rest, the footer */
 body > main { flex: 1; }
 /* The header is the design's (.ds-header), as in every product; framed (?embed=1) it drops the name. */
-.embed .ds-wordmark { display: none; }
+.embed .ds-wordmark, .embed .modes { display: none; }   /* framed, the page around it sets the mode */
 /* The footer: saving, the roll's key, the privacy line. */
 .bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 24px; background: var(--ground-2); border-top: var(--hairline); }
 /* Header groups (transport, take, tuning), divided by hairlines. */

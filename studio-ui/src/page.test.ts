@@ -17,6 +17,11 @@ describe("studio page", () => {
     expect(header.indexOf('id="play"')).toBeLessThan(header.indexOf('id="take-name"'));
   });
 
+  it("ends the header with the colour mode switch, the one every product shares", () => {
+    expect(header).toMatch(/<div id="modes" class="modes"><\/div>\s*$/);
+    expect(page).toMatch(/localStorage\.getItem\("swwallowws:mode"\)/);
+  });
+
   it("has the shared header: the wordmark, no tagline", () => {
     expect(header).toMatch(/class="ds-wordmark">Starling<span class="dot">\.<\/span>/);
     expect(header).not.toMatch(/simply/);

@@ -20,6 +20,7 @@ import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, ty
 import type { SavedFile } from "./types";
 import { SAMPLE_NAME, browserDecode, sampleWav } from "./try/sample";
 import { iconButton } from "../vendor/design/iconbutton.js";
+import { themeSwitch } from "../vendor/design/themeswitch.js";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -106,6 +107,8 @@ const rollInput = attachRollInput($<HTMLCanvasElement>("roll"), {
 $("fit").addEventListener("click", () => rollInput.reset());
 
 window.addEventListener("resize", redraw);
+// System, Paper or Night: the mode every product shares; the roll repaints in it.
+themeSwitch($("modes"), { onChange: () => redraw() });
 // Canvas colours are resolved per draw; redraw when the system scheme flips.
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 
