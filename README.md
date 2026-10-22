@@ -8,9 +8,10 @@ Your voice as MIDI, every slide and in-between note included. Starling tracks a 
 
 ## In pictures
 
-<a href="media/loop-paper.mp4"><img src="media/studio-paper.png" alt="Starling's studio: a sung phrase drawn as notes" width="720"></a>
-
-Files to share: [loop, Paper](media/loop-paper.mp4) · [loop, Night](media/loop-night.mp4) · [still, Paper](media/studio-paper.png) · [still, Night](media/studio-night.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/loop-night.gif">
+  <img src="media/loop-paper.gif" alt="Starling's studio: a sung phrase drawn as notes" width="720">
+</picture>
 
 ## Studio
 
