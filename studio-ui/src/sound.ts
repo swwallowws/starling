@@ -1,27 +1,16 @@
 // The sounds MIDI playback uses: the shared General MIDI bank (vendor/design/sound/gm.sf3,
 // GeneralUser GS; credit in vendor/design/sound/NOTICE), and the instrument a sung line plays with.
 
-/** Fetched once and kept in the Cache API. The build names the file by its content hash, so a
- * new bank is a new URL and replaces the old entry. */
+import { fetchSoundfont } from "../vendor/design/sound/soundfont.js";
+
+/** From the design's fetchSoundfont: the one copy every studio on the site shares, fetched once
+ * and kept in the Cache API, else this build's own (named by its content hash). */
 const SOUNDFONT = new URL("../vendor/design/sound/gm.sf3", import.meta.url).href;
-const CACHE = "starling-soundfont";
+const OLD_CACHE = "starling-soundfont"; // where this site kept its own copy before
 let bank: Promise<ArrayBuffer> | null = null;
 
 export function soundfontBytes(): Promise<ArrayBuffer> {
-  bank ??= (async () => {
-    let cache: Cache | null = null;
-    try { cache = await caches.open(CACHE); } catch { /* no Cache API here: fetch every time */ }
-    let res = cache && (await cache.match(SOUNDFONT));
-    if (!res) {
-      res = await fetch(SOUNDFONT);
-      if (!res.ok) throw new Error(`the instrument sounds did not load (${res.status})`);
-      if (cache) {
-        for (const old of await cache.keys()) if (old.url !== SOUNDFONT) await cache.delete(old);
-        await cache.put(SOUNDFONT, res.clone()).catch(() => {});
-      }
-    }
-    return res.arrayBuffer();
-  })();
+  bank ??= fetchSoundfont(SOUNDFONT, { retire: [OLD_CACHE] });
   bank.catch(() => { bank = null; }); // a failed load can be tried again
   return bank;
 }

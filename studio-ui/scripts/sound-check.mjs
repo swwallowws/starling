@@ -215,7 +215,7 @@ try {
   // The try page plays through the same player: the starling's song, audibly.
   const trial = await browser.newPage();
   await trial.goto(new URL("try/", URL_).href);
-  await trial.click("#sample");
+  await trial.click("#sample-link");
   await trial.waitForFunction(() => !document.getElementById("play").disabled, { timeout: 60000 });
   check(await trial.evaluate(() => window.starlingPlayer.ready), "try page: synth loaded");
   await trial.click("#play");
