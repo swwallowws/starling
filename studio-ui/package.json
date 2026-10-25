@@ -17,6 +17,7 @@
     "check:sound": "node scripts/sound-check.mjs"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^26.1.0",
     "puppeteer-core": "^25.16.0",
