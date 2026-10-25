@@ -48,7 +48,8 @@ export class Recorder {
     });
     this.ctx = new AudioContext();
     try {
-      await this.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([TAP], { type: "text/javascript" })));
+      const tapUrl = URL.createObjectURL(new Blob([TAP], { type: "text/javascript" }));
+      try { await this.ctx.audioWorklet.addModule(tapUrl); } finally { URL.revokeObjectURL(tapUrl); }
       const src = this.ctx.createMediaStreamSource(this.stream);
       const tap = new AudioWorkletNode(this.ctx, "tap");
       const mute = this.ctx.createGain();
