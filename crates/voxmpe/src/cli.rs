@@ -50,6 +50,9 @@ pub struct SettingsArgs {
     /// Single-channel MIDI with this bend range (semitones) instead of MPE
     #[arg(long)]
     pub single_channel: Option<u8>,
+    /// Move the MIDI this many semitones from the sung pitch, -24 to 24 (default 0)
+    #[arg(long, allow_hyphen_values = true, value_parser = clap::value_parser!(i8).range(-24..=24))]
+    pub transpose: Option<i8>,
 }
 
 impl SettingsArgs {
@@ -105,6 +108,9 @@ impl SettingsArgs {
             s.anchor_hz = v;
         }
         s.single_channel = self.single_channel;
+        if let Some(v) = self.transpose {
+            s.transpose = v;
+        }
         s.tuning().map_err(|e| anyhow!("parsing tuning: {e}"))?;
         Ok(s)
     }
@@ -194,6 +200,10 @@ mod tests {
                 onset_delta: Some(1.2),
                 anchor_hz: 440.0,
                 single_channel: Some(2),
+                ..Settings::default()
+            },
+            Settings {
+                transpose: -12,
                 ..Settings::default()
             },
             Settings {

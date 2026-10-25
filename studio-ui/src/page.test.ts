@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const header = page.split('<header class="ds-header">')[1].split("</header>")[0];
-const footer = page.split('<footer class="bar">')[1].split("</footer>")[0];
+const footer = page.split('<footer class="bar ds-footer">')[1].split("</footer>")[0];
+const side = page.split('<aside id="side"')[1].split("</aside>")[0];
 
 describe("studio page", () => {
   it("starts the header with Record and Play as icon buttons, as in the demo", () => {
@@ -39,7 +40,7 @@ describe("studio page", () => {
   });
 
   it("uses the design's field and selects in the header", () => {
-    expect(header).toMatch(/<input id="take-name" class="ds-field"/);
+    expect(header).toMatch(/<input id="take-name" class="ds-field[ "]/);
     for (const id of ["takes", "tuning", "anchor"]) expect(header).toMatch(new RegExp(`<select id="${id}" class="ds-select"`));
   });
 
@@ -47,10 +48,20 @@ describe("studio page", () => {
     expect(page).toMatch(/No mic handy\? <button id="sample-link"[^>]*>Try a starling's song\.<\/button>/);
   });
 
-  it("keeps the footer for saving: chips for the formats, one primary Save", () => {
-    expect(footer).not.toMatch(/id="play"|name="listen"/);
-    expect(footer.match(/<label class="ds-chip"[^>]*><input type="checkbox" name="format"/g)).toHaveLength(3);
-    expect(footer).toMatch(/<button id="save" class="ds-button primary"/);
+  it("saves from the side, under the settings: fill squares for the formats, one primary Save", () => {
+    expect(side).toMatch(/<div id="controls"><\/div>[\s\S]*class="save-box"/);
+    expect(side.match(/<label class="ds-check"[^>]*><input type="checkbox" name="format"/g)).toHaveLength(3);
+    expect(side).toMatch(/<button id="save" class="ds-button primary[ "]/);
     expect(page).not.toMatch(/Play \(Space\)/);
+  });
+
+  it("keeps the footer to one line, as in the other studios: where takes stay, and Get in touch", () => {
+    expect(footer).toMatch(/id="privacy"/);
+    expect(footer).toMatch(/<div id="contact"/);
+    expect(footer).not.toMatch(/name="format"|id="save"|legend/);
+  });
+
+  it("folds the roll's key into a corner of the roll", () => {
+    expect(page).toMatch(/<details class="roll-key[^"]*">\s*<summary>Key<\/summary>/);
   });
 });

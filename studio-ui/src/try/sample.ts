@@ -7,6 +7,22 @@ import { encodeWavFloat32 } from "../wav";
  *  credit ("Starling song: Vrymaa, Freesound, CC0") are in try/index.html. */
 export const SAMPLE_NAME = "Starling song";
 
+/** The song is 2 octaves down already; its MIDI starts another 2 octaves down, where
+ *  it sounds best (picked by ear). The audio stays as it is; a recorded take starts at 0. */
+export const SAMPLE_TRANSPOSE = -24;
+
+/** The settings the starling's song opens with, picked by ear for a bird's quick whistles:
+ *  longer gaps bridged, a little finer pitch splits, no loudness splits, half smoothing.
+ *  The rest stay at the defaults. Your own takes keep their own settings. */
+export const SAMPLE_SETTINGS = { gap_ms: 235, split_cents: 65, onset_delta: null, smoothing: 0.5 } as const;
+
+/** Is this take the starling's song? Loading it again saves another copy under a number
+ *  ("Starling song-2.wav", shown as "Starling song 2"), so the number counts too. */
+export function isSampleTake(stored: string): boolean {
+  const label = stored.replace(/\.wav$/i, "").replace(/[-_]+/g, " ").trim();
+  return new RegExp(`^${SAMPLE_NAME}( \\d+)?$`, "i").test(label);
+}
+
 /** The decoded audio, as an AudioBuffer gives it. */
 export interface Decoded {
   sampleRate: number;

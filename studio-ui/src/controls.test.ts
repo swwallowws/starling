@@ -23,22 +23,45 @@ describe("controls", () => {
     expect(heads.every((h) => h.classList.contains("ds-label"))).toBe(true);
   });
 
-  it("'off' is a chip of its own, outside the slider's label, so a click on the word turns it off", () => {
-    const { root, store } = setup();
-    const chip = root.querySelector<HTMLLabelElement>("label.ds-chip")!;
-    expect(chip.textContent).toBe("off");
-    expect(chip.parentElement!.closest("label")).toBeNull();
-    document.body.append(root);                       // a label passes its click on only in a document
-    chip.querySelector("span")!.click();
-    expect(store.get().onset_delta).toBeNull();
+  it("built with re-attack off (the starling's song after a reload), turning it on gives the default, not a stray value", () => {
+    const root = document.createElement("div");
+    const store = createSettingsStore({ ...DEFAULT_SETTINGS, onset_delta: null });
+    buildControls(root, store);
+    const range = root.querySelector<HTMLInputElement>(".onset input[type=range]")!;
+    expect(range.value).toBe(String(DEFAULT_SETTINGS.onset_delta));
+    expect(root.querySelector(".onset .val")!.textContent).toBe("+60%");
+    document.body.append(root);
+    root.querySelector<HTMLElement>(".onset .ds-check span")!.click();
+    expect(store.get().onset_delta).toBe(DEFAULT_SETTINGS.onset_delta);
     root.remove();
   });
 
-  it("Legato, Reset and Copy as flags are the design's buttons", () => {
-    const { root } = setup();
-    const buttons = [...root.querySelectorAll("button")];
-    expect(buttons.map((b) => b.textContent)).toEqual(["Legato", "Reset", "Copy as flags"]);
-    expect(buttons.every((b) => b.classList.contains("ds-button"))).toBe(true);
+  it("a fill square before Loudness re-attack turns the whole item off and on, keeping its value", () => {
+    const { root, store } = setup();
+    const onset = root.querySelector<HTMLElement>(".onset")!;
+    const check = onset.querySelector<HTMLLabelElement>("label.ds-check")!;
+    expect(onset.firstElementChild).toBe(check);
+    expect(check.textContent).toBe("");                 // no "off": the square says it
+    const before = store.get().onset_delta;
+    document.body.append(root);                       // a label passes its click on only in a document
+    check.querySelector("span")!.click();
+    expect(store.get().onset_delta).toBeNull();
+    expect(onset.classList.contains("off")).toBe(true);
+    check.querySelector("span")!.click();
+    expect(store.get().onset_delta).toBe(before);
+    expect(onset.classList.contains("off")).toBe(false);
+    root.remove();
+  });
+
+  it("the panel starts with one choice, Default or Legato, lit while the settings are that preset", () => {
+    const { root, store } = setup();
+    const [def, legato] = [...root.querySelectorAll<HTMLButtonElement>(".presets .ds-choice button")];
+    expect([def.textContent, legato.textContent]).toEqual(["Default", "Legato"]);
+    expect(def.classList.contains("on") && !legato.classList.contains("on")).toBe(true);
+    legato.click();
+    expect(!def.classList.contains("on") && legato.classList.contains("on")).toBe(true);
+    store.patch({ hold_ms: 222 });
+    expect(def.classList.contains("on") || legato.classList.contains("on")).toBe(false);
   });
 
   it("moving a slider keeps a tuning loaded elsewhere", () => {
@@ -49,9 +72,9 @@ describe("controls", () => {
     expect(store.get()).toMatchObject({ hold_ms: 150, tuning_scl: "! 31", anchor_hz: 440 });
   });
 
-  it("Legato and Reset keep the tuning and anchor", () => {
+  it("Legato and Default keep the tuning and anchor", () => {
     const { root, store } = setup();
-    const [legato, reset] = [...root.querySelectorAll("button")];
+    const [reset, legato] = [...root.querySelectorAll(".presets button")] as HTMLButtonElement[];
     legato.click();
     expect(store.get()).toMatchObject({ hold_ms: 180, gap_ms: 150, onset_delta: null, tuning_scl: "! 31", anchor_hz: 440 });
     reset.click();
@@ -80,10 +103,10 @@ describe("controls", () => {
     expect(ranges.every((r) => r.classList.contains("range-line"))).toBe(true);
   });
 
-  it("Reset also resets expression, Legato leaves it", () => {
+  it("Default also resets expression, Legato leaves it", () => {
     const { root, store } = setup();
     store.patch({ correction: 0.7 });
-    const [legato, reset] = [...root.querySelectorAll("button")];
+    const [reset, legato] = [...root.querySelectorAll(".presets button")] as HTMLButtonElement[];
     legato.click();
     expect(store.get().correction).toBeCloseTo(0.7);
     reset.click();

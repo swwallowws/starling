@@ -4,29 +4,40 @@
 @import "../vendor/design/controls.css";
 @import "../vendor/design/iconbutton.css";
 @import "../vendor/design/themeswitch.css";
+@import "../vendor/design/valuebox.css";
+@import "../vendor/design/contact.css";
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; height: 100vh; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-body); font-variant-numeric: tabular-nums; display: flex; flex-direction: column; height: 100vh; }
 /* header, the message line when there is one, the roll and panel taking the rest, the footer */
 body > main { flex: 1; }
 /* The header is the design's (.ds-header), as in every product; framed (?embed=1) it drops the name. */
 .embed .ds-wordmark, .embed .modes { display: none; }   /* framed, the page around it sets the mode */
-/* The footer: saving, the roll's key, the privacy line. */
-.bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 24px; background: var(--ground-2); border-top: var(--hairline); }
+/* The footer, as in the other studios: where your takes stay, and "Get in touch" on the right. */
+.bar { padding: 12px 24px; border-top: var(--hairline); }
 /* Header groups (transport, take, tuning), divided by hairlines. */
-.group { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-left: 16px; border-left: var(--hairline); }
+.ds-header { column-gap: 12px; }
+.group { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-left: 12px; border-left: var(--hairline); }
 .group label { display: inline-flex; gap: 8px; align-items: center; color: var(--ink-mut); }
 /* each select as wide as what it holds, so the header fits on one line at desktop widths */
-#takes { width: 11em; }
-#tuning { width: 9em; }
+#takes { width: 9.5em; }
+#tuning { width: 8em; }
 #anchor { width: 5.5em; }
-#take-name { width: 7em; }
+#take-name { width: 6em; }
+.transpose-label { color: var(--ink-mut); }
+/* what only works on a take (play, what you hear, the take's name, saving, the roll's key)
+   shows once there is one */
+body:not([data-take]) .after-take { display: none !important; }
+body:not([data-take]) main { grid-template-columns: 1fr; }     /* no settings column until there's a take */
+#delete-take[hidden] { display: none; }            /* the icon button's own display would show it */
+/* the delete close, armed by its first click: the accent says the next one deletes */
+#delete-take[data-armed] { background: var(--acc); border-color: var(--acc); color: var(--ground); }
 .root-note { display: inline-flex; gap: 8px; align-items: center; }
 .root-note[hidden] { display: none; }
-/* the note count closes the header, on the right */
-.group.status { margin-left: auto; padding-left: 0; border-left: 0; color: var(--ink-mut); }
+/* the colour mode closes the header, on the right */
+.ds-header > .modes { margin-left: auto; }
 main { display: grid; grid-template-columns: 1fr 320px; min-height: 0; }
-#controls .presets { display: flex; gap: 8px; margin-bottom: 20px; }
+#controls .presets { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
 .stage { position: relative; min-height: 0; }
 #roll { width: 100%; height: 100%; display: block; }
 .empty { position: absolute; inset: 0; display: flex; gap: var(--space); align-items: center; justify-content: center; color: var(--ink-mut); }
@@ -34,11 +45,23 @@ main { display: grid; grid-template-columns: 1fr 320px; min-height: 0; }
 .empty p { margin: 0; padding: 0 calc(var(--space) * 2); text-align: center; }
 /* a link-looking button, as the demo's "Try a starling's song." */
 button.link { padding: 0; border: 0; background: none; color: var(--acc); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.fine { font-size: 12px; color: var(--ink-mut); }
-#controls { padding: 20px 24px; border-left: var(--hairline); overflow: auto; font-size: 13px; }
-#controls label:not(.ds-chip) { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2); margin-bottom: calc(var(--space) * 2); }
-#controls label:not(.ds-chip) > span { color: var(--acc); }
-#controls .onset-off { margin: calc(var(--space) * -1.5) 0 calc(var(--space) * 2); }
+.fine { font-size: var(--text-ui); color: var(--ink-mut); }
+/* The side: the settings, then saving with them, scrolling together. */
+#side { padding: 20px 24px; border-left: var(--hairline); overflow: auto; font-size: var(--text-ui); }
+/* saving stays in reach: pinned to the side's foot while the settings scroll above it */
+.save-box { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space) calc(var(--space) * 2);
+  position: sticky; bottom: -20px; margin: 28px -24px -20px; padding: 16px 24px 20px; border-top: var(--hairline); background: var(--ground); }
+.save-box > .ds-label { flex-basis: 100%; }
+.save-box > .formats { flex-basis: 100%; display: grid; gap: var(--space); }
+.save-box > :empty { display: none; }   /* an empty slot (saved path, drags) leaves no gap */
+#controls label:not(.ds-check) { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--space) / 2); margin-bottom: calc(var(--space) * 2); }
+#controls label:not(.ds-check) > span { color: var(--acc); }
+#controls .onset { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: calc(var(--space) / 2) var(--space);
+  margin-bottom: calc(var(--space) * 2); }
+#controls .onset > .val { color: var(--acc); }
+#controls .onset.off > :not(.ds-check) { opacity: .45; }     /* off: the whole item dims */
+#controls .presets { flex-wrap: wrap; }
+#controls .presets .fine { flex-basis: 100%; margin: 0; }
 #controls code { font-family: var(--font-mono); font-size: 12px; word-break: break-all; }
 /* Buttons, choices, chips, fields and selects are the design's (controls.css); Record and Play its icon buttons. */
 :focus-visible { outline: 1px solid var(--acc); outline-offset: 1px; }
@@ -48,27 +71,37 @@ input[type="checkbox"] { accent-color: var(--acc); }
 .error { color: var(--ink); font-weight: 600; }
 #controls h3 { margin: 28px 0 12px; }
 #controls .presets + h3 { margin-top: 0; }
-.legend { display: inline-flex; flex-wrap: wrap; gap: var(--space); align-items: center; margin-left: auto; color: var(--ink-mut); font-size: 12px; }
+/* About the roll, in its top-right corner: the note count, Fit when zoomed, the key folded up. */
+.roll-tools { position: absolute; top: 8px; right: 8px; display: flex; align-items: flex-start; gap: var(--space);
+  max-width: calc(100% - 16px); font-size: var(--text-ui); color: var(--ink-mut); }
+.roll-tools #note-count { padding: 3px 0; }
+.roll-key { position: relative; }
+.roll-key .legend { position: absolute; right: 0; width: min(420px, calc(100vw - 48px)); }
+.roll-key summary { cursor: pointer; list-style: none; margin-left: auto; width: fit-content; padding: 2px 8px; background: var(--ground-2); border: var(--hairline); }
+.roll-key summary::-webkit-details-marker { display: none; }
+.roll-key summary:hover { color: var(--ink); }
+.roll-key[open] summary { color: var(--ink); }
+.legend { display: grid; gap: 6px; margin-top: 4px; padding: 10px 12px; background: var(--ground-2); border: var(--hairline); }
+.legend > span { display: inline-flex; align-items: center; gap: var(--space); }
+.legend .hint { display: block; margin-top: 4px; }
 .legend .mk, .legend .ln { display: inline-block; }
 .legend .mk.tick { width: 2px; height: 8px; background: var(--ink); }
 .legend .mk.slash { width: 1px; height: 9px; background: var(--ink); transform: rotate(30deg); }
 .legend .ln { width: 16px; border-top: 2px solid var(--ink); }
 .legend .ln.mut { border-top: 1.5px solid var(--ink-mut); opacity: 0.5; }
 /* the message line: a quiet bar under the header, as the other studios' note bar; gone when empty */
-.message { margin: 0; padding: 6px 24px; border-bottom: var(--hairline); color: var(--ink-mut); font-size: 13px; }
+.message { margin: 0; padding: 6px 24px; border-bottom: var(--hairline); color: var(--ink-mut); font-size: var(--text-ui); }
 .message:empty { display: none; }
 .drag { padding: calc(var(--space) / 2) var(--space); border: 1px dashed var(--line); color: var(--ink-mut); }
 .drag[draggable="true"] { color: var(--ink); border-color: var(--acc); cursor: grab; }
 #drags { display: inline-flex; gap: calc(var(--space) / 2); flex-wrap: wrap; }
-.formats { display: inline-flex; flex-wrap: wrap; gap: var(--space); }
+
 /* Phones: the page scrolls. The roll gets most of a screen, the settings follow it in
    full, and the header's groups stack without their dividers. */
 @media (max-width: 700px) {
   body { display: block; height: auto; }
   main { grid-template-columns: 1fr; }
   .stage { height: 55vh; min-height: 280px; }
-  #controls { border-left: 0; border-top: var(--hairline); overflow: visible; }
+  #side { border-left: 0; border-top: var(--hairline); overflow: visible; }
   .group { padding-left: 0; border-left: 0; }
-  .group.status { margin-left: 0; }
-  .legend { margin-left: 0; }
 }

@@ -35,7 +35,7 @@ const segmentation = (s: Partial<Settings>): Partial<Settings> => ({
   onset_delta: s.onset_delta,
 });
 
-/** Sliders, onset, Legato/Reset and the flags line. Every change is a patch to
+/** Sliders, onset, the Default/Legato choice and the flags line. Every change is a patch to
  *  `store`, so settings changed elsewhere (tuning, anchor) are never overwritten. */
 export function buildControls(root: HTMLElement, store: SettingsStore) {
   root.innerHTML = "";
@@ -52,18 +52,21 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
     inputs.set(d.key, [input, val]);
   }
 
-  const onset = document.createElement("label");
-  const onsetVal = document.createElement("span");
+  // Loudness re-attack: a fill square before its name turns the whole item on or off (as
+  // Rearranged's checks do); off, the item dims and keeps its value for when it comes back.
+  const onset = Object.assign(document.createElement("div"), { className: "onset" });
+  const onsetVal = Object.assign(document.createElement("span"), { className: "val" });
   const onsetRange = Object.assign(document.createElement("input"), { type: "range", className: "range-line", min: "0.1", max: "3", step: "0.05" });
-  const onsetOff = Object.assign(document.createElement("input"), { type: "checkbox" });
+  onsetRange.setAttribute("aria-label", "Loudness re-attack");
+  let lastOnset = DEFAULT_SETTINGS.onset_delta ?? 0.6;
+  const onsetOn = Object.assign(document.createElement("input"), { type: "checkbox" });
+  onsetOn.setAttribute("aria-label", "Loudness re-attack on");
   onsetRange.addEventListener("input", () => store.patch({ onset_delta: Number(onsetRange.value) }));
-  onsetOff.addEventListener("change", () => store.patch({ onset_delta: onsetOff.checked ? null : Number(onsetRange.value) }));
-  // "off" is the design's chip, a label of its own after the slider's, so a click on the
-  // word turns it off (inside the slider's label it would only reach the slider).
-  const offChip = Object.assign(document.createElement("label"), { className: "ds-chip onset-off" });
-  offChip.append(onsetOff, Object.assign(document.createElement("span"), { textContent: "off" }));
-  onset.append("Loudness re-attack", onsetVal, onsetRange);
-  root.append(onset, offChip);
+  onsetOn.addEventListener("change", () => store.patch({ onset_delta: onsetOn.checked ? Number(onsetRange.value) : null }));
+  const onsetCheck = Object.assign(document.createElement("label"), { className: "ds-check" });
+  onsetCheck.append(onsetOn, document.createElement("span"));
+  onset.append(onsetCheck, Object.assign(document.createElement("span"), { className: "name", textContent: "Loudness re-attack" }), onsetVal, onsetRange);
+  root.append(onset);
 
   const exprHead = Object.assign(document.createElement("h3"), { className: "ds-label", textContent: "Expression" });
   root.append(exprHead);
@@ -78,14 +81,28 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
     pcts.set(d.key, [input, val]);
   }
 
-  // The presets lead the panel: one press for longer notes, or back to the start.
-  const buttons = Object.assign(document.createElement("div"), { className: "presets" });
-  const legato = Object.assign(document.createElement("button"), { className: "ds-button small", textContent: "Legato", title: "Longer, joined notes: fewer splits" });
-  const reset = Object.assign(document.createElement("button"), { className: "ds-button small", textContent: "Reset", title: "Every setting back to its default" });
-  legato.addEventListener("click", () => store.patch(segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
-  reset.addEventListener("click", () => store.patch({ ...segmentation(DEFAULT_SETTINGS), ...expression(DEFAULT_SETTINGS) }));
-  buttons.append(legato, reset);
-  root.prepend(buttons);
+  // The presets lead the panel, as one choice: Default puts every setting back, Legato
+  // gives longer, joined notes. Lit while the settings are that preset; a moved slider
+  // lights neither.
+  const presets = Object.assign(document.createElement("div"), { className: "presets" });
+  const choice = Object.assign(document.createElement("span"), { className: "ds-choice small" });
+  choice.setAttribute("role", "group");
+  choice.setAttribute("aria-label", "Preset");
+  const preset = (text: string, onClick: () => void) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: text });
+    b.addEventListener("click", onClick);
+    choice.append(b);
+    return b;
+  };
+  const defaultBtn = preset("Default", () => store.patch({ ...segmentation(DEFAULT_SETTINGS), ...expression(DEFAULT_SETTINGS) }));
+  const legatoBtn = preset("Legato", () => store.patch(segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
+  presets.append(
+    Object.assign(document.createElement("span"), { className: "ds-label", textContent: "Preset" }),
+    choice,
+    Object.assign(document.createElement("p"), { className: "fine", textContent: "Legato: longer, joined notes, fewer splits." }),
+  );
+  root.prepend(presets);
+  const same = (a: Partial<Settings>, b: Partial<Settings>) => JSON.stringify(a) === JSON.stringify(b);
 
   const flags = document.createElement("p");
   const code = document.createElement("code");
@@ -104,11 +121,18 @@ export function buildControls(root: HTMLElement, store: SettingsStore) {
       input.style.setProperty("--fill", `${((s[key] - d.min) / (d.max - d.min)) * 100}%`);
       val.textContent = `${s[key]} ${d.unit}`;
     }
-    onsetOff.checked = s.onset_delta === null;
+    onsetOn.checked = s.onset_delta !== null;
     onsetRange.disabled = s.onset_delta === null;
-    if (s.onset_delta !== null) onsetRange.value = String(s.onset_delta);
+    onset.classList.toggle("off", s.onset_delta === null);
+    // off, the slider keeps the last value it had on (the default if it never was), so
+    // turning it back on picks up where it was, never wherever the browser left the thumb
+    if (s.onset_delta !== null) lastOnset = s.onset_delta;
+    onsetRange.value = String(lastOnset);
     onsetRange.style.setProperty("--fill", `${((Number(onsetRange.value) - 0.1) / (3 - 0.1)) * 100}%`);
-    onsetVal.textContent = s.onset_delta === null ? "off" : `+${Math.round(s.onset_delta * 100)}%`;
+    onsetVal.textContent = `+${Math.round(Number(onsetRange.value) * 100)}%`;
+    const seg = segmentation(s);
+    defaultBtn.classList.toggle("on", same(seg, segmentation(DEFAULT_SETTINGS)) && same(expression(s), expression(DEFAULT_SETTINGS)));
+    legatoBtn.classList.toggle("on", same(seg, segmentation({ ...DEFAULT_SETTINGS, ...LEGATO })));
     for (const [key, [input, val]] of pcts) {
       const d = EXPRESSION.find((x) => x.key === key)!;
       const pct = Math.round(s[key] * 100);

@@ -57,6 +57,9 @@ pub struct Settings {
     pub correction: f32,
     /// 0..1.5: vibrato depth, 1 = as sung.
     pub vibrato: f32,
+    /// Semitones the MIDI moves from the sung pitch (the audio stays as recorded). In
+    /// 12-TET an exact shift; in another tuning each note lands on the nearest step.
+    pub transpose: i8,
 }
 
 impl Default for Settings {
@@ -76,6 +79,7 @@ impl Default for Settings {
             smoothing: 0.0,
             correction: 0.0,
             vibrato: 1.0,
+            transpose: 0,
         }
     }
 }
@@ -153,6 +157,9 @@ impl Settings {
         }
         if let Some(r) = self.single_channel {
             f.push(format!("--single-channel {r}"));
+        }
+        if self.transpose != 0 {
+            f.push(format!("--transpose {}", self.transpose));
         }
         f.join(" ")
     }

@@ -17,6 +17,8 @@ export interface Settings {
   correction: number;
   /** 0..1.5: vibrato depth, 1 = as sung */
   vibrato: number;
+  /** -24..24: semitones the MIDI moves from the sung pitch; the audio stays as recorded */
+  transpose: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -33,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   smoothing: 0,
   correction: 0,
   vibrato: 1,
+  transpose: 0,
 };
 
 export const LEGATO: Partial<Settings> = { hold_ms: 180, gap_ms: 150, onset_delta: null };

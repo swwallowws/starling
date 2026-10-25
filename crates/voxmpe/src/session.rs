@@ -170,8 +170,33 @@ impl Session {
 
     fn analysis(&self, s: &Settings) -> Result<Analysis> {
         let tuning = s.tuning().map_err(|e| anyhow!("tuning: {e}"))?;
-        let mut a = retune(&transcribe(&self.frames, &s.analysis_config()), &tuning);
+        let frames = transposed(&self.frames, s.transpose);
+        let mut a = retune(&transcribe(frames.as_ref().unwrap_or(&self.frames), &s.analysis_config()), &tuning);
         shape(&mut a, &tuning, &s.shape());
         Ok(a)
     }
+}
+
+/// The sung pitch moved by `semitones` before notes are cut, so the notes, their bends,
+/// every export and the tuned files all move together while the audio stays put.
+/// `None` when there is nothing to move.
+fn transposed(frames: &Frames, semitones: i8) -> Option<Frames> {
+    if semitones == 0 {
+        return None;
+    }
+    let k = 2f32.powf(semitones as f32 / 12.0);
+    Some(Frames {
+        hop_s: frames.hop_s,
+        frames: frames
+            .frames
+            .iter()
+            .map(|f| {
+                let mut f = *f;
+                if f.f0_hz > 0.0 {
+                    f.f0_hz *= k;
+                }
+                f
+            })
+            .collect(),
+    })
 }

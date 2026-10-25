@@ -11,7 +11,7 @@ import { missingFeatures } from "../web/support";
 import { demoShell } from "../../vendor/design/demoshell.js";
 import { iconButton } from "../../vendor/design/iconbutton.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
-import { SAMPLE_NAME, browserDecode, sampleWav } from "./sample";
+import { SAMPLE_NAME, SAMPLE_SETTINGS, SAMPLE_TRANSPOSE, browserDecode, sampleWav } from "./sample";
 import { clearMarkBehind } from "./clearmark";
 import { seekable } from "../../vendor/design/playhead.js";
 import { startPoint } from "../synth";
@@ -22,7 +22,7 @@ const SAMPLE_URL = new URL("../../samples/starling-song.mp3", import.meta.url);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const recordEl = $<HTMLButtonElement>("record");
 const playEl = $<HTMLButtonElement>("play");
-const sampleEls = [$<HTMLButtonElement>("sample"), $<HTMLButtonElement>("sample-link")];
+const sampleEls = [$<HTMLButtonElement>("sample-link")];
 const canvas = $<HTMLCanvasElement>("roll");
 const tuningInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="tuning"]')];
 const smoothingRow = $<HTMLElement>("smoothing-row");
@@ -30,6 +30,8 @@ const smoothingInput = $<HTMLInputElement>("smoothing");
 const smoothingVal = $<HTMLElement>("smoothing-val");
 
 const say = (text: string) => { $("message").textContent = text; };
+/** Fetching and analysing, said in the roll box; "" clears it. */
+const progress = (text: string) => { const p = $("progress"); p.textContent = text; p.hidden = !text; };
 
 // Record/Stop and Play are icon toggles; the record icon swaps to stop while
 // recording, and the play icon swaps to pause while playing. Space and R are
@@ -42,8 +44,7 @@ const play = iconButton(playEl, {
   onPress: (playing) => (playing ? startPlayback() : stopPlayback()),
 });
 // The sample take: the toolbar button, and the link in the empty roll.
-iconButton(sampleEls[0], { onPress: () => void useSample() });
-sampleEls[1].addEventListener("click", () => void useSample());
+sampleEls[0].addEventListener("click", () => void useSample());
 
 const { rail } = demoShell($("demo"), {
   product: "Starling",
@@ -85,6 +86,17 @@ let dragAt: number | null = null;
 let presets: Preset[] | null = null;
 let tuning: Preset | null = null;
 let smoothing = DEFAULT_SETTINGS.smoothing;
+/** The starling's song starts with its built-in transpose and settings; a recorded take as sung. */
+let transpose = 0;
+let takeSettings: Partial<Settings> = {};
+/** A take's starting point: the song's own, or a recording's defaults; the slider shows its smoothing. */
+function startTake(sample: boolean) {
+  transpose = sample ? SAMPLE_TRANSPOSE : 0;
+  takeSettings = sample ? SAMPLE_SETTINGS : {};
+  smoothing = sample ? SAMPLE_SETTINGS.smoothing : DEFAULT_SETTINGS.smoothing;
+  smoothingInput.value = String(Math.round(smoothing * 100));
+  paintSmoothing();
+}
 let renderSeq = 0;
 let stopping = false;
 
@@ -96,7 +108,7 @@ function paintSmoothing() {
 }
 
 function draw() {
-  if (take) drawRoll(canvas, take.info, notes, dragAt ?? playhead);
+  if (take) drawRoll(canvas, take.info, notes, dragAt ?? playhead, null, transpose);
 }
 
 // A click, tap or drag on the roll moves the playhead there. Paused, it just
@@ -133,7 +145,7 @@ paintSmoothing();
 
 const unsupported = api.kind === "web" && missingFeatures().length > 0;
 if (unsupported) say(`This browser is missing ${missingFeatures().join(", ")}. Try a current Chrome, Edge, Firefox or Safari.`);
-// The instrument sounds (Electric Piano) download while the
+// The instrument sounds (Vibraphone) download while the
 // visitor reads; the player that plays them comes with the first take.
 else prefetchSoundfont();
 
@@ -172,12 +184,15 @@ async function finishRecording() {
   try {
     const { wav, seconds } = await recorder.stop();
     $("rec-status").textContent = "";
-    say(`Analyzing ${seconds.toFixed(1)} s...`);
-    const r = await api.uploadTake(defaultTakeName(new Date()), wav, (f) => say(`Analyzing... ${Math.round(f * 100)}%`));
+    say("");
+    progress(`Analyzing ${seconds.toFixed(1)} s...`);
+    const r = await api.uploadTake(defaultTakeName(new Date()), wav, (f) => progress(`Analyzing... ${Math.round(f * 100)}%`));
+    startTake(false);
     await open(r);
   } catch (e) {
     say((e as Error).message);
   } finally {
+    progress("");
     stopping = false;
     setTakeSources(true);
   }
@@ -191,15 +206,18 @@ async function useSample() {
     stopPlayback();
   }
   setTakeSources(false);
-  say("Fetching a starling's song...");
+  say("");
+  progress("Fetching a starling's song...");
   try {
     const { wav, seconds } = await sampleWav(SAMPLE_URL, browserDecode);
-    say(`Analyzing ${seconds.toFixed(1)} s...`);
-    const r = await api.uploadTake(SAMPLE_NAME, wav, (f) => say(`Analyzing... ${Math.round(f * 100)}%`));
-    await open(r, "A starling, 2 octaves down so the whistles fall in singing range. ");
+    progress(`Analyzing ${seconds.toFixed(1)} s...`);
+    const r = await api.uploadTake(SAMPLE_NAME, wav, (f) => progress(`Analyzing... ${Math.round(f * 100)}%`));
+    startTake(true);
+    await open(r, `A starling, 2 octaves down, its MIDI another 2 octaves down (Transpose ${SAMPLE_TRANSPOSE}). `);
   } catch (e) {
     say((e as Error).message);
   } finally {
+    progress("");
     setTakeSources(true);
   }
 }
@@ -232,7 +250,7 @@ async function open(r: LoadResp, lead = "") {
 async function render(): Promise<boolean> {
   if (!take) return false;
   const mine = ++renderSeq;
-  const s: Settings = { ...DEFAULT_SETTINGS, tuning_name: tuning?.id ?? null, tuning_scl: tuning?.scl ?? null, smoothing };
+  const s: Settings = { ...DEFAULT_SETTINGS, ...takeSettings, tuning_name: tuning?.id ?? null, tuning_scl: tuning?.scl ?? null, smoothing, transpose };
   const r = await api.render(take.id, s);
   if (mine !== renderSeq) return false;
   notes = r.notes;
@@ -331,6 +349,8 @@ function startOver() {
   tuning = null;
   tuningInputs[0].checked = true;
   smoothing = DEFAULT_SETTINGS.smoothing;
+  transpose = 0;
+  takeSettings = {};
   smoothingInput.value = String(smoothing * 100);
   paintSmoothing();
   smoothingRow.hidden = true;

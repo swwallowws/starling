@@ -12,17 +12,32 @@ const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const MIDI_LINE = 2;
 const SUNG_LINE = 1.5;
 
+/** What you listen to leads the roll; what you don't hear stays, dimmed: the voice dims the
+ *  notes, MIDI dims the sung line and the loudness, both leaves everything as it is. */
+export type Listen = "voice" | "midi" | "both";
+const DIM = 0.25;
+const EMPHASIS: Record<Listen, { sung: number; notes: number; loudness: number }> = {
+  voice: { sung: 1, notes: DIM, loudness: 1 },
+  midi: { sung: DIM, notes: 1, loudness: DIM },
+  both: { sung: 0.5, notes: 1, loudness: 1 },
+};
+
 /** Rows at least this tall get every note named, not just the Cs. */
 const NAME_EVERY_ROW = 14;
 
 /** Draw the roll, zoomed to `zoom` when given. Returns what is on screen and the whole fitted view. */
 export function drawRoll(
   canvas: HTMLCanvasElement,
-  info: TakeInfo,
+  sung: TakeInfo,
   notes: RNote[],
   playhead: number | null,
   zoom: Win | null = null,
+  transpose = 0,
+  listen: Listen = "both",
 ): { view: View; fit: View } {
+  const em = EMPHASIS[listen];
+  // The sung line moves with a transposed MIDI, so the two still sit on each other.
+  const info = transpose ? { ...sung, contour: sung.contour.map((p) => (p === null ? null : p + transpose)) } : sung;
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -67,9 +82,9 @@ export function drawRoll(
     }
   }
 
-  // Raw sung contour: --ink-mut at 50%, thinner than the MIDI pitch line.
+  // Raw sung contour: --ink-mut, thinner than the MIDI pitch line.
   g.strokeStyle = c.mut;
-  g.globalAlpha = 0.5;
+  g.globalAlpha = em.sung;
   g.lineWidth = SUNG_LINE;
   g.lineJoin = "round";
   g.beginPath();
@@ -86,6 +101,7 @@ export function drawRoll(
   g.lineWidth = 1;
 
   // Notes: tints of the accent shaded by pitch; the sounding note is full accent with an ink outline.
+  g.globalAlpha = em.notes;
   const noteH = Math.max(2, row - 1);
   const pitches = notes.map((n) => n.pitch);
   const lo = Math.min(...pitches), hi = Math.max(...pitches);
@@ -124,6 +140,7 @@ export function drawRoll(
       g.lineWidth = 1;
     }
   }
+  g.globalAlpha = 1;
 
   g.restore();
 
@@ -132,10 +149,12 @@ export function drawRoll(
   g.fillStyle = c.band;
   g.fillRect(0, top, w, LOUDNESS_LANE);
   g.fillStyle = c.mut;
+  g.globalAlpha = em.loudness;
   info.loudness.forEach((l, i) => {
     const x = timeToX(v, i * info.hop_s);
     g.fillRect(x, h - l * (LOUDNESS_LANE - 4), Math.max(1, timeToX(v, info.hop_s) - timeToX(v, 0)), l * (LOUDNESS_LANE - 4));
   });
+  g.globalAlpha = 1;
 
   if (playhead !== null) {
     g.strokeStyle = c.acc;

@@ -19,11 +19,13 @@ Your voice as MIDI, every slide and in-between note included. Starling tracks a 
 
 Opens a local page where you record (or open) a take, move the note-split settings while listening, and save or drag the `.mid` into Ableton Live. Takes and exports go to `takes/` in the current folder (`--takes DIR` to change it).
 
+The settings and saving share the side of the page: Preset (Default or Legato), the note splits and expression, then Save as. Transpose in the header moves the MIDI from the sung pitch (the audio stays as recorded), and each take keeps its own: a new recording starts at 0, the starling's song at -24, and it opens with its own note splits too. Voice, MIDI or Both picks what you hear, and the roll dims what you don't. The MIDI plays with the Vibraphone from the shared General MIDI bank.
+
 ## CLI
 
     voxmpe convert take.wav -o take.mid --legato --hold-ms 150
 
-Each flag is one of the studio's settings (`--hold-ms` is Hold (small moves), `--legato` the Legato button); `voxmpe convert --help` lists them all.
+Each flag is one of the studio's settings (`--hold-ms` is New note after (small step), `--legato` the Legato preset, `--transpose` the Transpose); `voxmpe convert --help` lists them all.
 
 ## Browser studio
 

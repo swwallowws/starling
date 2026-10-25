@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { downmix, sampleWav, type Decoded } from "./sample";
+import { downmix, isSampleTake, sampleWav, type Decoded } from "./sample";
 
 const decoded = (rate: number, ...chans: number[][]): Decoded => ({
   sampleRate: rate,
@@ -36,5 +36,10 @@ describe("try sample take", () => {
   it("says so when the file doesn't load", async () => {
     const get = (async () => new Response("", { status: 404 })) as unknown as typeof fetch;
     await expect(sampleWav("s.mp3", async () => decoded(1, [0]), get)).rejects.toThrow(/didn't load \(404\)/);
+  });
+
+  it("knows the starling's song, the copies a second load saves under a number too", () => {
+    for (const n of ["Starling song.wav", "Starling song-2.wav", "starling_song-12.wav"]) expect(isSampleTake(n), n).toBe(true);
+    for (const n of ["Take 1.wav", "Starling song remix.wav", "My starling song.wav"]) expect(isSampleTake(n), n).toBe(false);
   });
 });

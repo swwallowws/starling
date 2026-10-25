@@ -83,6 +83,23 @@ fn render_responds_to_settings_without_retracking() {
 }
 
 #[test]
+fn transpose_moves_every_note_and_leaves_their_timing() {
+    let Some(m) = model() else { return };
+    let s = Session::load("step", wav(&step(0.3)), &m).unwrap();
+    let sung = s.render(&Settings::default()).unwrap();
+    for t in [-12i8, 7] {
+        let moved = s.render(&Settings { transpose: t, ..Settings::default() }).unwrap();
+        let p: Vec<i16> = moved.notes.iter().map(|n| n.pitch as i16).collect();
+        let want: Vec<i16> = sung.notes.iter().map(|n| n.pitch as i16 + t as i16).collect();
+        assert_eq!(p, want, "transpose {t}");
+        for (a, b) in moved.notes.iter().zip(&sung.notes) {
+            assert!((a.start - b.start).abs() < 1e-4 && (a.end - b.end).abs() < 1e-4, "transpose {t} keeps each note's timing");
+        }
+        assert_eq!(moved.flags, format!("--transpose {t}"));
+    }
+}
+
+#[test]
 fn export_is_a_valid_mpe_file_with_every_note() {
     let Some(m) = model() else { return };
     let s = Session::load("step", wav(&step(0.3)), &m).unwrap();

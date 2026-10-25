@@ -1,6 +1,6 @@
 import "./styles.css";
 import { backend as api } from "./backend-impl";
-import { drawRoll } from "./roll";
+import { drawRoll, type Listen } from "./roll";
 import { attachRollInput } from "./roll-input";
 import type { View } from "./coords";
 import type { LoadResp, Preset, RNote, TakeInfo } from "./types";
@@ -18,9 +18,13 @@ import { Player } from "./player";
 import { Recorder, micError, nextTakeName, takeLabel, takeNameFromFile } from "./recorder";
 import { downloadUrlData, loadFormats, nextFormats, saveFormats, settingsKey, type Format } from "./export";
 import type { SavedFile } from "./types";
-import { SAMPLE_NAME, browserDecode, sampleWav } from "./try/sample";
+import { SAMPLE_NAME, SAMPLE_TRANSPOSE, browserDecode, isSampleTake, sampleWav } from "./try/sample";
+import { forgetTranspose, rememberTranspose, transposeFor } from "./take-transpose";
+import { settingsOnOpen } from "./take-settings";
 import { iconButton } from "../vendor/design/iconbutton.js";
 import { themeSwitch } from "../vendor/design/themeswitch.js";
+import { valueBox } from "../vendor/design/valuebox.js";
+import { contactForm } from "../vendor/design/contact.js";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -29,6 +33,10 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 // recorder and the player, set below; a click flips it first, then is corrected.
 const recordBtn = iconButton($<HTMLButtonElement>("record"));
 const playBtn = iconButton($<HTMLButtonElement>("play"));
+iconButton($<HTMLButtonElement>("delete-take"));
+
+// "Get in touch" at the footer's right, the form every studio shares.
+contactForm($("contact"), { subject: "Starling: new message" });
 
 export function say(text: string) {
   $("message").textContent = text;
@@ -71,11 +79,15 @@ export const app = {
   scrub: null as number | null,
   view: null as View | null,
   fit: null as View | null,
+  /** The transpose the shown notes were made with, so the sung line moves with them. */
+  transpose: 0,
+  /** What you hear: it leads the roll. */
+  listen: "midi" as Listen,
 };
 
 export function redraw() {
   if (!app.info) return;
-  const { view, fit } = drawRoll($<HTMLCanvasElement>("roll"), app.info, app.notes, app.scrub ?? app.playhead, rollInput.zoom());
+  const { view, fit } = drawRoll($<HTMLCanvasElement>("roll"), app.info, app.notes, app.scrub ?? app.playhead, rollInput.zoom(), app.transpose, app.listen);
   app.view = view;
   app.fit = fit;
   $("fit").hidden = !rollInput.zoomed();
@@ -116,10 +128,23 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 const store = createSettingsStore(loadSettings(localStorageOrNull(), DEFAULT_SETTINGS));
 store.subscribe((s) => saveSettings(localStorageOrNull(), s));
 
+// Transpose: the design's value box, as in Ready Set. It moves the MIDI from the sung pitch
+// (the audio stays as recorded); a change elsewhere (the starling's song) shows in it.
+const fmtSemis = (v: number) => (v > 0 ? `+${v}` : String(v));
+const transposeBox = valueBox($("transpose"), {
+  min: -24, max: 24, value: store.get().transpose, labelledBy: "transpose-label", format: fmtSemis,
+  onChange: (v: number) => {
+    if (store.get().transpose !== v) store.patch({ transpose: v });
+    if (app.info) rememberTranspose(localStorageOrNull(), app.info.name, v);   // the take keeps it
+  },
+});
+store.subscribe((s) => { if (transposeBox.value !== s.transpose) transposeBox.set(s.transpose); });
+
 const renderer = createRenderer(
   api.render,
   (r, s) => {
     app.notes = r.notes;
+    app.transpose = s.transpose;
     controls.setFlags(r.flags);
     tuning.renderOk(s);
     redraw();
@@ -142,7 +167,7 @@ export function setOnNotesChanged(f: () => void) { onNotesChanged = f; }
 const player = new Player(); // starts loading the instrument sounds now, well before Play
 setOnNotesChanged(() => player.setNotes(app.notes));
 // For scripted checks: the output level, and the player to listen in on.
-Object.assign(window, { starlingPlayer: player });
+Object.assign(window, { starlingPlayer: player, starlingApp: app });
 
 async function togglePlay() {
   if (player.playing) player.stop();
@@ -160,8 +185,13 @@ function tickPlayhead() {
 }
 
 $("play").addEventListener("click", togglePlay);
+// What you hear, and what leads the roll: the voice's line, the MIDI notes, or both.
 document.querySelectorAll<HTMLInputElement>('input[name="listen"]').forEach((r) =>
-  r.addEventListener("change", () => player.setMode(r.value as "voice" | "midi" | "both")),
+  r.addEventListener("change", () => {
+    app.listen = r.value as Listen;
+    player.setMode(app.listen);
+    redraw();
+  }),
 );
 const recorder = new Recorder();
 const takeName = $<HTMLInputElement>("take-name");
@@ -388,6 +418,8 @@ export async function opened(r: LoadResp) {
   document.body.dataset.analysis = r.cached ? "cached" : "fresh";
   $("empty").hidden = true;
   $("delete-take").hidden = !api.canDelete;
+  disarmDelete();                        // another take: the close starts unarmed
+  document.body.toggleAttribute("data-take", true);   // play, listen, name and saving show
   await refreshTakes(r.info.name);
   player.stop();
   rollInput.clear();
@@ -398,6 +430,13 @@ export async function opened(r: LoadResp) {
   $("saved-path").textContent = "";
   $("reveal").hidden = true;
   updateDrag();
+  // Each take opens with its own Transpose: what it was last set to, else 0 for a new
+  // recording and the built-in value for the starling's song.
+  const t = transposeFor(localStorageOrNull(), r.info.name);
+  if (store.get().transpose !== t) store.patch({ transpose: t });
+  // The starling's song also opens with its own settings; your takes get yours back.
+  const own = settingsOnOpen(localStorageOrNull(), store.get(), isSampleTake(r.info.name));
+  if (own) store.patch(own);
   renderer.request(app.takeId, store.get());
 }
 
@@ -409,7 +448,7 @@ $("sample-link").addEventListener("click", async () => {
   try {
     const { wav } = await sampleWav(SAMPLE_URL, browserDecode);
     await opened(await api.uploadTake(SAMPLE_NAME, wav, analyzing(SAMPLE_NAME)));
-    say("A starling, 2 octaves down so the whistles fall in singing range. Song: Vrymaa on Freesound, CC0.");
+    say(`A starling, 2 octaves down. Its MIDI starts another 2 octaves down (Transpose ${fmtSemis(SAMPLE_TRANSPOSE)}). Song: Vrymaa on Freesound, CC0.`);
   } catch (err) {
     say((err as Error).message);
   }
@@ -444,11 +483,29 @@ $<HTMLSelectElement>("takes").addEventListener("change", async (e) => {
   }
 });
 
+// Deleting takes two clicks, as removing a kept cover in Rearranged: the first arms the
+// close (accent, "Click again to delete"), the second deletes; left alone it disarms.
+let deleteArm = 0;
+function disarmDelete() {
+  clearTimeout(deleteArm);
+  const b = $("delete-take");
+  b.removeAttribute("data-armed");
+  b.title = "Delete this take";
+}
 $("delete-take").addEventListener("click", async () => {
   const name = app.info?.name;
-  if (!name || !confirm(`Delete ${takeLabel(name)} from this browser?`)) return;
+  if (!name) return;
+  const b = $("delete-take");
+  if (!b.hasAttribute("data-armed")) {
+    b.setAttribute("data-armed", "");
+    b.title = `Click again to delete ${takeLabel(name)}`;
+    deleteArm = window.setTimeout(disarmDelete, 4000);
+    return;
+  }
+  disarmDelete();
   try {
     await api.deleteTake(name);
+    forgetTranspose(localStorageOrNull(), name);
   } catch (e) {
     say((e as Error).message);
     return;
@@ -461,6 +518,7 @@ $("delete-take").addEventListener("click", async () => {
   const roll = $<HTMLCanvasElement>("roll");
   roll.getContext("2d")?.clearRect(0, 0, roll.width, roll.height);
   $("delete-take").hidden = true;
+  document.body.toggleAttribute("data-take", false);
   $("empty").hidden = false;
   $("note-count").textContent = "";
   updateDrag();

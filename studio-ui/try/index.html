@@ -28,7 +28,6 @@
         <div class="try-toolbar-transport">
           <button id="record" type="button" data-icon="record" data-toggle data-pressed-icon="stop" data-key="r"></button>
           <button id="play" type="button" data-icon="play" data-toggle data-key="Space" disabled></button>
-          <button id="sample" type="button" data-icon="loop" data-label="Try a starling's song"></button>
           <span id="rec-status" class="try-fine"></span>
         </div>
         <span class="try-toolbar-tuning ds-choice small" role="radiogroup" aria-label="Tuning">
@@ -42,12 +41,14 @@
       </div>
       <div class="try-stage" data-demoshell-mark>
         <canvas id="roll"></canvas>
-        <p id="empty" class="try-empty"><span id="empty-text">The piano roll shows up here after a take. No mic handy? <button id="sample-link" type="button" class="try-link">Try a starling's song.</button></span></p>
+        <p id="empty" class="try-empty"><span id="empty-text">No mic handy? <button id="sample-link" type="button" class="try-link">Try a starling's song.</button></span></p>
+        <!-- while a take is fetched and analysed, the progress shows in the box itself -->
+        <p id="progress" class="try-progress" role="status" hidden></p>
       </div>
       <p id="message" class="try-message" role="status"></p>
-      <p class="try-fine">Takes stay in this browser and are never uploaded. Starling song: <a href="https://freesound.org/s/737756/" target="_blank" rel="noopener">Vrymaa, Freesound</a>, CC0.</p>
       </div>
     </div>
+    <footer class="try-foot">Takes stay in this browser and are never uploaded. Starling song: <a href="https://freesound.org/s/737756/" target="_blank" rel="noopener">Vrymaa, Freesound</a>, CC0.</footer>
     <script type="module" src="/src/try/main.ts"></script>
   </body>
 </html>

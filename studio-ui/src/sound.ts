@@ -31,5 +31,6 @@ export function prefetchSoundfont() {
   soundfontBytes().catch(() => {});
 }
 
-/** The one General MIDI program (0-based) the notes play with: Electric Piano. */
-export const PROGRAM = 4;
+/** The one General MIDI program (0-based) every take's notes play with: Vibraphone, picked
+ *  by ear (its clear attack makes each note start easy to hear). */
+export const PROGRAM = 11;
