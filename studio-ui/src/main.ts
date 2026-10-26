@@ -205,13 +205,15 @@ async function toggleRecord() {
     player.stop();
     try {
       const t0 = performance.now();
+      $("rec-status").hidden = false;
       await recorder.start((peak) => {
-        const secs = ((performance.now() - t0) / 1000).toFixed(1);
-        $("rec-status").textContent = `${secs} s  ${"|".repeat(Math.round(peak * 20))}`;
+        $("rec-time").textContent = `${((performance.now() - t0) / 1000).toFixed(1)} s`;
+        $("rec-level").style.transform = `scaleX(${Math.min(1, peak)})`;
       });
       recordBtn.setPressed(true);
     } catch (e) {
       recordBtn.setPressed(false);
+      $("rec-status").hidden = true;
       say(micError(e));
     }
     return;
@@ -219,7 +221,7 @@ async function toggleRecord() {
   btn.disabled = true;
   const { wav, seconds } = await recorder.stop();
   recordBtn.setPressed(false);
-  $("rec-status").textContent = "";
+  $("rec-status").hidden = true;
   say(`Saving and analyzing ${seconds.toFixed(1)} s...`);
   try {
     const name = nameForTake();

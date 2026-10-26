@@ -33,7 +33,8 @@
         <span class="ds-choice small after-take" role="radiogroup" aria-label="Listen to">
           <label><input type="radio" name="listen" value="voice" />Voice</label><label><input type="radio" name="listen" value="midi" checked />MIDI</label><label><input type="radio" name="listen" value="both" />Both</label>
         </span>
-        <span id="rec-status" class="fine"></span>
+        <!-- Fixed widths: the time and the level change while recording, and nothing beside them may move. -->
+        <span id="rec-status" class="fine" hidden><span id="rec-time"></span><span class="rec-meter" aria-hidden="true"><i id="rec-level"></i></span></span>
       </span>
       <span class="group" aria-label="Take">
         <select id="takes" class="ds-select" aria-label="Open a take"></select>

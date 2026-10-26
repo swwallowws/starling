@@ -46,6 +46,12 @@ main { display: grid; grid-template-columns: 1fr 320px; min-height: 0; }
 /* a link-looking button, as the demo's "Try a starling's song." */
 button.link { padding: 0; border: 0; background: none; color: var(--acc); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .fine { font-size: var(--text-ui); color: var(--ink-mut); }
+/* while recording: the time in fixed-width figures and the level as a bar's fill, so the header never reflows */
+#rec-status { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+#rec-status[hidden] { display: none; }
+#rec-time { min-width: 5ch; text-align: right; }
+.rec-meter { width: 40px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.rec-meter i { display: block; height: 100%; background: var(--acc); transform: scaleX(0); transform-origin: left; }
 /* The side: the settings, then saving with them, scrolling together. */
 #side { padding: 20px 24px; border-left: var(--hairline); overflow: auto; font-size: var(--text-ui); }
 /* saving stays in reach: pinned to the side's foot while the settings scroll above it */
