@@ -28,7 +28,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tiny_http = { version = "0.12", optional = true }
 include_dir = { version = "0.7", optional = true }
-expressive-liveset = { git = "https://github.com/swwallowws/expressive-liveset.git", rev = "4f6cfaf460b33c0f67e9e5d9a1853f7250074ef5" }
+expressive-liveset = { git = "https://github.com/swwallowws/expressive-liveset.git", rev = "4ee586bf38ddccc246e8ab432ed6594ccebe75b6" }
 
 [dev-dependencies]
 midly = "0.5"
