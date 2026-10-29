@@ -8,7 +8,7 @@ import { prefetchSoundfont } from "../sound";
 import { Recorder, defaultTakeName } from "../recorder";
 import { DEFAULT_SETTINGS, type LoadResp, type Preset, type RNote, type Settings, type TakeInfo } from "../types";
 import { missingFeatures } from "../web/support";
-import { demoShell } from "../../vendor/design/demoshell.js";
+import { demoShell, isEmbed } from "../../vendor/design/demoshell.js";
 import { iconButton } from "../../vendor/design/iconbutton.js";
 import { STEPS, micMessage, recordLimit } from "./steps";
 import { SAMPLE_NAME, SAMPLE_SETTINGS, SAMPLE_TRANSPOSE, browserDecode, sampleWav } from "./sample";
@@ -46,7 +46,7 @@ const play = iconButton(playEl, {
 // The sample take: the toolbar button, and the link in the empty roll.
 sampleEls[0].addEventListener("click", () => void useSample());
 
-const { rail } = demoShell($("demo"), {
+const { rail, aside } = demoShell($("demo"), {
   product: "Starling",
   title: "turn sound into notes.",
   intro: "A small slice of the studio.",
@@ -59,6 +59,9 @@ const { rail } = demoShell($("demo"), {
   primary: { toggle: () => play.toggle() },
   keys: { r: () => record.toggle() },
 });
+// Framed, the footer (the song's credit) goes under the steps, inside what the shell
+// measures for the host page, so the frame is tall enough and never scrolls.
+if (isEmbed(location.search)) aside.append(document.querySelector(".try-foot")!);
 // After the tour: the full studio, in a new tab so the demo stays where it is.
 {
   const full = Object.assign(document.createElement("a"), {
