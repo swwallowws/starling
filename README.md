@@ -59,9 +59,8 @@ notes are its steps (the same numbers as the "MIDI + tuning for Live 12"
 export) and each note's pitch curve holds only its glides and vibrato.
 
 The `.als` writer comes from
-[expressive-liveset](https://github.com/swwallowws/expressive-liveset), a git
-dependency fetched over SSH. That repo is private for now, so the build fails
-without access to it.
+[expressive-liveset](https://github.com/swwallowws/expressive-liveset), a public
+git dependency that Cargo fetches over HTTPS.
 
 ## Tests
 
