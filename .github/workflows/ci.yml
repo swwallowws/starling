@@ -26,10 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       # cpal (microphone input) needs the ALSA headers on Linux
       - run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - run: cargo test --locked --workspace
+      - name: Clippy, warnings as errors
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
 
   studio:
     runs-on: ubuntu-latest

@@ -121,14 +121,14 @@ pub fn choose_range(steps: &[i64], t: &Steps) -> Range {
     while t.midi(floor) < hz_to_midi(LOWEST_HZ) - 1e-9 {
         floor += 1;
     }
-    let fits = |l: i64| l >= floor && l <= lo && l + MIDI_KEYS - 1 >= hi;
+    let fits = |l: i64| l >= floor && l <= lo && l + MIDI_KEYS > hi;
     if fits(-60) {
         return Range {
             lowest: -60,
             outside: 0,
         };
     }
-    if hi - lo <= MIDI_KEYS - 1 {
+    if hi - lo < MIDI_KEYS {
         let centred = lo - (MIDI_KEYS - 1 - (hi - lo)).div_euclid(2);
         let lowest = lo.min(centred.max(floor).max(hi - (MIDI_KEYS - 1)));
         return Range { lowest, outside: 0 };
